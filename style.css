@@ -277,3 +277,12 @@ body{overflow-x:clip}
 .site{background:color-mix(in srgb,var(--bg) 95%,transparent)}
 .codebar pre{max-height:180px}
 @media (max-width:860px){.codebar pre{max-height:64px}}
+#dstudio[hidden]{display:none}
+.dfoot{flex-wrap:wrap;align-items:center}
+#dstudio{flex:1 1 auto;text-align:center}
+@media (max-width:640px){
+ .dfoot{display:grid;grid-template-columns:1fr 2fr;gap:8px}
+ #dstudio{grid-column:1/-1;order:-1;padding:11px}
+ #dstudio[hidden]{display:none}
+ .dfoot .chip,.dfoot .btn{min-height:44px;display:grid;place-items:center}
+}

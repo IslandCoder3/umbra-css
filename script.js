@@ -92,7 +92,6 @@ const cr=s=>{const a=lum(s.fg),b=lum(s.bg);return (Math.max(a,b)+.05)/(Math.min(
 const fl=s=>{const sl=(s.max-s.min)/(s.maxVw-s.minVw),ic=s.min-sl*s.minVw;return {sl,ic,px:Math.min(s.max,Math.max(s.min,ic+sl*s.vw))}};
 const r3=n=>+n.toFixed(3);
 const FF={sans:'system-ui, -apple-system, "Segoe UI", sans-serif',serif:'Georgia, "Times New Roman", serif',mono:'ui-monospace, Menlo, Consolas, monospace'};
-const CP={triangle:'polygon(50% 0%, 0% 100%, 100% 100%)',diamond:'polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%)',hexagon:'polygon(25% 0%, 75% 0%, 100% 50%, 75% 100%, 25% 100%, 0% 50%)',pentagon:'polygon(50% 0%, 100% 38%, 82% 100%, 18% 100%, 0% 38%)',star:'polygon(50% 0%, 61% 35%, 98% 35%, 68% 57%, 79% 91%, 50% 70%, 21% 91%, 32% 57%, 2% 35%, 39% 35%)',arrow:'polygon(0% 20%, 60% 20%, 60% 0%, 100% 50%, 60% 100%, 60% 80%, 0% 80%)',circle:'circle(50% at 50% 50%)',ellipse:'ellipse(50% 38% at 50% 50%)'};
 const rgb=c=>{const n=parseInt(c.slice(1),16);return [n>>16&255,n>>8&255,n&255]};
 const hex=a=>'#'+a.map(v=>Math.round(v).toString(16).padStart(2,'0')).join('');
 const mix=(c,t,p)=>hex(rgb(c).map((v,i)=>v+(t[i]-v)*p));
@@ -217,4 +216,11 @@ orb.addEventListener('pointerup',()=>{drag=false});
 orb.addEventListener('keydown',e=>{const t=tgt(),d={ArrowLeft:[1,0],ArrowRight:[-1,0],ArrowUp:[0,1],ArrowDown:[0,-1]}[e.key];
  if(!t||!d)return;e.preventDefault();const n=e.shiftKey?5:1;t.x+=d[0]*n;t.y+=d[1]*n;build();update()});
 addEventListener('resize',placeOrb);
-const ids=TOOLS.flatMap(g=>g[1].map(t=>t[0])),hs=location.hash.slice(1);setMode(ids.includes(hs)?hs:'box');addEventListener('hashchange',()=>{const x=location.hash.slice(1);if(ids.includes(x)&&x!==mode)setMode(x)});
+const ids=TOOLS.flatMap(g=>g[1].map(t=>t[0]));
+function handoff(id,pl){try{const st=JSON.parse(decodeURIComponent(pl));
+ if(id==='box'||id==='text'){const t=S[id];t.layers=st.layers.map(l=>mkLayer(l));t.sel=0;if(st.bg)t.bg=st.bg;if(st.el)t.el=st.el}
+ else if(id==='filter')Object.assign(S.filter,FD,st,{ds:Object.assign({on:false,x:6,y:8,b:10,c:'#000000',a:.45},st.ds||{})});
+ else if(G[id])Object.assign(G[id].s,st)}catch(e){}}
+const parseHash=()=>{const h=location.hash.slice(1),i=h.indexOf(':'),id=i<0?h:h.slice(0,i);return ids.includes(id)?[id,i<0?null:h.slice(i+1)]:null};
+const r0=parseHash();if(r0&&r0[1])handoff(r0[0],r0[1]);setMode(r0?r0[0]:'box');
+addEventListener('hashchange',()=>{const r=parseHash();if(!r)return;if(r[1]){handoff(r[0],r[1]);setMode(r[0])}else if(r[0]!==mode)setMode(r[0])});
