@@ -100,6 +100,8 @@ const hsl=c=>{const [r,g,b]=rgb(c).map(v=>v/255),mx=Math.max(r,g,b),mn=Math.min(
 const LV=[50,100,200,300,400,500,600,700,800,900],PL=[[1,.9],[1,.78],[1,.58],[1,.38],[1,.18],[0,0],[0,.16],[0,.32],[0,.5],[0,.68]];
 const shade=(c,i)=>PL[i][1]?mix(c,PL[i][0]?[255,255,255]:[0,0,0],PL[i][1]):c;
 const bz=s=>`cubic-bezier(${r3(s.x1)}, ${r3(s.y1)}, ${r3(s.x2)}, ${r3(s.y2)})`;
+const AP={'holy grail':{a:['header header header','nav main aside','footer footer footer'],c:'80px 1fr 80px',r:'auto 1fr auto',n:['header','nav','main','aside','footer']},'sidebar':{a:['sidebar main'],c:'90px 1fr',r:'1fr',n:['sidebar','main']},'dashboard':{a:['title title','stats chart','list chart'],c:'1fr 1.4fr',r:'auto 1fr 1fr',n:['title','stats','list','chart']}};
+const MQ=[['min-width: 480px','Phones in landscape and up'],['min-width: 768px','Tablets and up'],['min-width: 1024px','Laptops and up'],['min-width: 1280px','Large desktops'],['max-width: 767px','Phones and small tablets only'],['max-width: 1023px','Anything below laptop size'],['prefers-color-scheme: dark','User prefers dark mode'],['prefers-reduced-motion: reduce','User wants less animation'],['hover: hover','Device can hover (mouse)'],['pointer: coarse','Touch screens'],['orientation: landscape','Wider than tall'],['print','Printing the page']];
 const G={
 gradient:{label:'background',s:{type:'linear',angle:135,p2:50,c1:'#ff9a3c',c2:'#e4457b',c3:'#3a4fd8',use3:true},
  f:[['sel','type',['linear','radial','conic']],['r','Angle','angle',0,360,1,'deg'],['r','Mid stop','p2',5,95,1,'%'],['c','Color 1','c1'],['c','Color 2','c2'],['c','Color 3','c3'],['chk','Use third color','use3'],['btn','Randomize colors',s=>{s.c1=rnd();s.c2=rnd();s.c3=rnd()}]],
@@ -149,6 +151,25 @@ ease:{label:'easing',s:{x1:.25,y1:.1,x2:.25,y2:1},
  inject:()=>'@keyframes ez{from{transform:translateX(-110px)}to{transform:translateX(110px)}}',
  pv:s=>[['width','34px'],['height','34px'],['border-radius','50%'],['background','linear-gradient(135deg,#4a5bdc,#8b9bff)'],['animation',`ez 1.6s ${bz(s)} infinite alternate`]],
  out:s=>[['transition-timing-function',bz(s)]]},
+neu:{label:'neumorphism',stage:s=>s.c,s:{c:'#e0e5ec',d:10,b:22,r:24,inset:false},pv:[['width','180px'],['height','180px']],
+ f:[['c','Base color','c'],['r','Distance','d',2,30,1,'px'],['r','Blur','b',0,60,1,'px'],['r','Radius','r',0,80,1,'px'],['chk','Pressed in (inset)','inset']],
+ out:s=>{const dk=mix(s.c,[0,0,0],.14),lt=mix(s.c,[255,255,255],.75),i=s.inset?'inset ':'';return [['background',s.c],['border-radius',s.r+'px'],['box-shadow',`${i}${s.d}px ${s.d}px ${s.b}px ${dk}, ${i}-${s.d}px -${s.d}px ${s.b}px ${lt}`]]}},
+border:{label:'border',s:{w:3,st:'solid',c:'#4a5bdc',r:16},f:[['r','Width','w',0,16,1,'px'],['sel','st',['solid','dashed','dotted','double'],'Style'],['c','Color','c'],['r','Radius','r',0,100,1,'px']],
+ out:s=>[['border',`${s.w}px ${s.st} ${s.c}`],['border-radius',s.r+'px']]},
+blend:{label:'background-blend-mode',s:{m:'multiply'},pv:[['background','linear-gradient(135deg,#ff9a3c,#e4457b),linear-gradient(90deg,#18c4a7,#4a5bdc)'],['width','220px'],['height','170px']],
+ f:[['sel','m',['multiply','screen','overlay','darken','lighten','color-dodge','color-burn','hard-light','soft-light','difference','exclusion','hue','saturation','color','luminosity'],'Mode']],
+ out:s=>[['background-blend-mode',s.m]],code:s=>`background-blend-mode: ${s.m};\n/* needs two or more backgrounds on the element */\n/* mix-blend-mode: ${s.m}; blends an element with what is behind it */`},
+areas:{label:'grid-template-areas',cls:'kids v',kids:s=>AP[s.p].n.length,s:{p:'holy grail',gap:8},pv:[['width','340px'],['height','220px']],
+ f:[['sel','p',Object.keys(AP),'Layout'],['r','Gap','gap',0,24,1,'px']],kidTxt:(i,s)=>AP[s.p].n[i],kidCss:(s,i)=>`grid-area:${AP[s.p].n[i]}`,
+ out:s=>{const p=AP[s.p];return [['display','grid'],['grid-template-areas',p.a.map(x=>`"${x}"`).join(' ')],['grid-template-columns',p.c],['grid-template-rows',p.r],['gap',s.gap+'px']]},
+ code:s=>{const p=AP[s.p];return `.layout {\n  display: grid;\n  grid-template-areas:\n${p.a.map(x=>`    "${x}"`).join('\n')};\n  grid-template-columns: ${p.c};\n  grid-template-rows: ${p.r};\n  gap: ${s.gap}px;\n}\n\n${p.n.map(n=>`.${n} { grid-area: ${n}; }`).join('\n')}`}},
+media:{label:'media query',s:{k:'min-width: 768px'},f:[['sel','k',MQ.map(x=>x[0]),'Query']],txt:s=>MQ.find(x=>x[0]===s.k)[1],
+ pv:[['background','transparent'],['width','100%'],['height','auto'],['font','700 1.5rem "Bricolage Grotesque",system-ui,sans-serif'],['color','#1b2240'],['text-align','center']],out:s=>[],
+ code:s=>`@media ${s.k==='print'?'print':'('+s.k+')'} {\n  .element {\n    /* styles */\n  }\n}`},
+scroll:{label:'scrollbar',cls:'kids sb',kids:14,s:{w:10,th:'#4a5bdc',tr:'#e8ebff',r:6},pv:[['width','260px'],['height','180px'],['overflow-y','scroll'],['display','block']],
+ f:[['r','Width','w',4,20,1,'px'],['r','Thumb radius','r',0,10,1,'px'],['c','Thumb color','th'],['c','Track color','tr']],kidCss:()=>'margin-bottom:6px;height:34px',
+ inject:s=>`.gbox.sb::-webkit-scrollbar{width:${s.w}px}.gbox.sb::-webkit-scrollbar-track{background:${s.tr}}.gbox.sb::-webkit-scrollbar-thumb{background:${s.th};border-radius:${s.r}px}`,out:s=>[],
+ code:s=>`.scroll::-webkit-scrollbar {\n  width: ${s.w}px;\n}\n.scroll::-webkit-scrollbar-track {\n  background: ${s.tr};\n}\n.scroll::-webkit-scrollbar-thumb {\n  background: ${s.th};\n  border-radius: ${s.r}px;\n}\n\n@supports not selector(::-webkit-scrollbar) {\n  .scroll {\n    scrollbar-width: thin;\n    scrollbar-color: ${s.th} ${s.tr};\n  }\n}`},
 anim:{label:'animation',s:{kf:'pulse',dur:1.2,ease:'ease-in-out',iter:'infinite'},pv:[['background','linear-gradient(135deg,#4a5bdc,#8b9bff)'],['width','120px'],['height','120px'],['border-radius','24px']],
  f:[['sel','kf',Object.keys(KF),'Effect'],['r','Duration','dur',.2,4,.1,'s'],['sel','ease',['linear','ease','ease-in-out','cubic-bezier(.34, 1.56, .64, 1)'],'Easing'],['sel','iter',['infinite','1','3'],'Repeat']],
  inject:s=>`@keyframes ${s.kf}{${KF[s.kf].map(([k,v])=>`${k}{${v}}`).join('')}}`,
@@ -162,8 +183,8 @@ function buildGen(c){const g=G[mode],s=g.s;
   h('div',{class:'inline'},...(f[3]?[h('span',{style:'color:var(--mute);font-size:.9rem;min-width:70px'},f[3])]:[]),...f[2].map(o=>h('button',{class:'chip',type:'button','aria-pressed':s[f[1]]===o,onclick:()=>{s[f[1]]=o;build();update()}},o)))))}
 function updateGen(sub,stage){const g=G[mode],s=g.s,o=g.out(s);
  sub.textContent=typeof g.txt==='function'?g.txt(s):(g.txt||'');sub.className='gbox'+(g.cls?' '+g.cls:'');
- const nk=typeof g.kids==='function'?g.kids(s):(g.kids||0);for(let i=0;i<nk;i++){const k=document.createElement('i');k.textContent=g.kidTxt?g.kidTxt(i):i+1;if(g.kidCss)k.style.cssText=g.kidCss(s,i);sub.append(k)}
- stage.style.setProperty('--base',g.base||'#d5dafb');stage.style.setProperty('--glow',g.base?'rgba(255,255,255,.18)':'rgba(255,255,255,.7)');stage.classList.toggle('dark',!!g.base);
+ const nk=typeof g.kids==='function'?g.kids(s):(g.kids||0);for(let i=0;i<nk;i++){const k=document.createElement('i');k.textContent=g.kidTxt?g.kidTxt(i,s):i+1;if(g.kidCss)k.style.cssText=g.kidCss(s,i);sub.append(k)}
+ stage.style.setProperty('--base',g.stage?g.stage(s):(g.base||'#d5dafb'));stage.style.setProperty('--glow',g.base?'rgba(255,255,255,.18)':'rgba(255,255,255,.7)');stage.classList.toggle('dark',!!g.base);
  let kf=document.getElementById('kf');if(!kf){kf=document.createElement('style');kf.id='kf';document.head.append(kf)}kf.textContent=g.inject?g.inject(s):'';
  const pv=(typeof g.pv==='function'?g.pv(s):g.pv)||[];(g.last?o.concat(pv):pv.concat(o)).forEach(([p,v])=>p&&sub.style.setProperty(p,v));
  $('#prop').textContent=g.label;$('#code').textContent=g.code?g.code(s):o.map(([p,v])=>p?`${p}: ${v};`:`/* ${v} */`).join('\n');placeOrb()}
@@ -173,8 +194,9 @@ function placeOrb(){const st=$('#stage'),t=tgt();orb.hidden=!t;$('#hint').hidden
  if(!t){st.style.setProperty('--lx','50%');st.style.setProperty('--ly','22%');return}
  const w=st.clientWidth,hh=st.clientHeight,px=Math.min(w-24,Math.max(24,w/2-t.x/K)),py=Math.min(hh-24,Math.max(24,hh/2-t.y/K));
  orb.style.left=px+'px';orb.style.top=py+'px';st.style.setProperty('--lx',px+'px');st.style.setProperty('--ly',py+'px')}
+let aimR=0;
 function aim(px,py){const t=tgt();if(!t)return;const st=$('#stage'),lim=mode==='filter'?40:60,c=v=>Math.round(Math.max(-lim,Math.min(lim,v)));
- t.x=c((st.clientWidth/2-px)*K);t.y=c((st.clientHeight/2-py)*K);build();update()}
+ t.x=c((st.clientWidth/2-px)*K);t.y=c((st.clientHeight/2-py)*K);if(!aimR)aimR=requestAnimationFrame(()=>{aimR=0;build();update()})}
 orb.addEventListener('pointerdown',e=>{drag=true;orb.setPointerCapture(e.pointerId)});
 orb.addEventListener('pointermove',e=>{if(!drag)return;const r=$('#stage').getBoundingClientRect();aim(e.clientX-r.left,e.clientY-r.top)});
 orb.addEventListener('pointerup',()=>{drag=false});

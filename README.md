@@ -1,6 +1,6 @@
 # Umbra
 
-All-in-one CSS library. Open `index.html` for 36 ready-made designs with editable, copyable CSS, or `studio.html` for 18 generators (effects, shape, color, layout, type, motion). No build step.
+All-in-one CSS library. Open `index.html` for 82 ready-made designs with editable, copyable CSS, or `studio.html` for 24 generators (effects, shape, color, layout, type, motion, responsive and UI). No build step.
 
 - `index.html` gallery
 - `studio.html` generator studio

@@ -260,3 +260,18 @@ body{overflow-x:clip}
 }
 @media (max-width:430px){.wm{display:none}.brand{margin-right:auto}}
 @media (max-width:350px){.siteIn{padding:0 8px;gap:4px}.links a{padding:8px 7px}.links a[aria-current]::after{left:7px;right:7px}.tswitch{width:58px}.tswitch .knob{width:24px;height:24px}.tswitch[aria-checked="true"] .knob{transform:translateX(24px)}}
+@media (max-width:350px){.tstage>*{zoom:.6}}
+
+/* performance: no per-card blur, skip offscreen rendering */
+.tile{backdrop-filter:none}
+.tile[hidden]{display:none}
+.panel,.tabs,.tgroup{backdrop-filter:none}
+.bar{backdrop-filter:none;background:color-mix(in srgb,var(--bg) 96%,transparent)}
+.stagewrap{box-shadow:0 14px 32px -18px rgba(0,0,0,.5)}
+@media (max-width:640px){.site{backdrop-filter:none;background:color-mix(in srgb,var(--bg) 96%,transparent)}}
+@media (prefers-reduced-motion:reduce){.tstage *,.tstage *::before,.tstage *::after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition:none!important}}
+/* filter chips: wrap on desktop, fade-scroll on small screens */
+#filters .chip{padding:5px 12px;font-size:.9rem}
+@media (min-width:861px){.bar .filters{flex-wrap:wrap;overflow:visible;gap:8px}}
+.filters.more{-webkit-mask-image:linear-gradient(90deg,#000 calc(100% - 36px),transparent);mask-image:linear-gradient(90deg,#000 calc(100% - 36px),transparent)}
+.site{background:color-mix(in srgb,var(--bg) 95%,transparent)}
