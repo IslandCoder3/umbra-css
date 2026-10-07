@@ -275,3 +275,5 @@ body{overflow-x:clip}
 @media (min-width:861px){.bar .filters{flex-wrap:wrap;overflow:visible;gap:8px}}
 .filters.more{-webkit-mask-image:linear-gradient(90deg,#000 calc(100% - 36px),transparent);mask-image:linear-gradient(90deg,#000 calc(100% - 36px),transparent)}
 .site{background:color-mix(in srgb,var(--bg) 95%,transparent)}
+.codebar pre{max-height:180px}
+@media (max-width:860px){.codebar pre{max-height:64px}}

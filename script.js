@@ -102,6 +102,12 @@ const shade=(c,i)=>PL[i][1]?mix(c,PL[i][0]?[255,255,255]:[0,0,0],PL[i][1]):c;
 const bz=s=>`cubic-bezier(${r3(s.x1)}, ${r3(s.y1)}, ${r3(s.x2)}, ${r3(s.y2)})`;
 const AP={'holy grail':{a:['header header header','nav main aside','footer footer footer'],c:'80px 1fr 80px',r:'auto 1fr auto',n:['header','nav','main','aside','footer']},'sidebar':{a:['sidebar main'],c:'90px 1fr',r:'1fr',n:['sidebar','main']},'dashboard':{a:['title title','stats chart','list chart'],c:'1fr 1.4fr',r:'auto 1fr 1fr',n:['title','stats','list','chart']}};
 const MQ=[['min-width: 480px','Phones in landscape and up'],['min-width: 768px','Tablets and up'],['min-width: 1024px','Laptops and up'],['min-width: 1280px','Large desktops'],['max-width: 767px','Phones and small tablets only'],['max-width: 1023px','Anything below laptop size'],['prefers-color-scheme: dark','User prefers dark mode'],['prefers-reduced-motion: reduce','User wants less animation'],['hover: hover','Device can hover (mouse)'],['pointer: coarse','Touch screens'],['orientation: landscape','Wider than tall'],['print','Printing the page']];
+const BPS=[1536,1400,1300,1280,1200,1090,1024,1010,992,900,800,768,720,640,600,576,500,480,425,400,375,360,320];
+const DEV=w=>w>1200?'Large Screens':w>800?'Large Tablet Devices':w>600?'Tablet Devices':'Smartphones';
+const ladder=s=>{let prev='';return [...s.bps].map(Number).sort((a,b)=>s.dir==='max-width'?b-a:a-b).map(w=>{
+ const lab=s.cm?DEV(w):'',head=lab&&lab!==prev?(prev=lab,`/* ${lab} */\n`):'',pre=s.px==='only screen and'?'only screen':s.px==='screen and'?'screen':'';
+ if(s.lay==='classic'){const c=`${s.dir} : ${w}px`;return head+(pre?`@media ${pre}\nand (${c}) {\n\n}`:`@media (${c}) {\n\n}`)}
+ return head+`@media ${pre?pre+' and ':''}(${s.dir}: ${w}px) {\n  \n}`}).join('\n\n')};
 const G={
 gradient:{label:'background',s:{type:'linear',angle:135,p2:50,c1:'#ff9a3c',c2:'#e4457b',c3:'#3a4fd8',use3:true},
  f:[['sel','type',['linear','radial','conic']],['r','Angle','angle',0,360,1,'deg'],['r','Mid stop','p2',5,95,1,'%'],['c','Color 1','c1'],['c','Color 2','c2'],['c','Color 3','c3'],['chk','Use third color','use3'],['btn','Randomize colors',s=>{s.c1=rnd();s.c2=rnd();s.c3=rnd()}]],
@@ -163,9 +169,16 @@ areas:{label:'grid-template-areas',cls:'kids v',kids:s=>AP[s.p].n.length,s:{p:'h
  f:[['sel','p',Object.keys(AP),'Layout'],['r','Gap','gap',0,24,1,'px']],kidTxt:(i,s)=>AP[s.p].n[i],kidCss:(s,i)=>`grid-area:${AP[s.p].n[i]}`,
  out:s=>{const p=AP[s.p];return [['display','grid'],['grid-template-areas',p.a.map(x=>`"${x}"`).join(' ')],['grid-template-columns',p.c],['grid-template-rows',p.r],['gap',s.gap+'px']]},
  code:s=>{const p=AP[s.p];return `.layout {\n  display: grid;\n  grid-template-areas:\n${p.a.map(x=>`    "${x}"`).join('\n')};\n  grid-template-columns: ${p.c};\n  grid-template-rows: ${p.r};\n  gap: ${s.gap}px;\n}\n\n${p.n.map(n=>`.${n} { grid-area: ${n}; }`).join('\n')}`}},
-media:{label:'media query',s:{k:'min-width: 768px'},f:[['sel','k',MQ.map(x=>x[0]),'Query']],txt:s=>MQ.find(x=>x[0]===s.k)[1],
+media:{label:'media query',s:{mode:'Breakpoint ladder',k:'min-width: 768px',bps:[1400,1300,1200,1090,1024,1010,800,600,500],dir:'max-width',px:'only screen and',lay:'classic',cm:true},
+ f:s=>{const m=['sel','mode',['Breakpoint ladder','Single query'],'Output'];return s.mode==='Single query'?[m,['sel','k',MQ.map(x=>x[0]),'Query']]:[m,
+  ['btn','My ladder',s=>Object.assign(s,{dir:'max-width',px:'only screen and',lay:'classic',bps:[1400,1300,1200,1090,1024,1010,800,600,500]})],
+  ['btn','Bootstrap 5',s=>Object.assign(s,{dir:'min-width',bps:[576,768,992,1200,1400]})],
+  ['btn','Tailwind',s=>Object.assign(s,{dir:'min-width',bps:[640,768,1024,1280,1536]})],
+  ['sel','dir',['max-width','min-width'],'Direction'],['sel','px',['only screen and','screen and','none'],'Prefix'],['sel','lay',['classic','compact'],'Layout'],
+  ['chk','Device comments','cm'],['multi','bps',BPS,'Sizes','px']]},
+ txt:s=>s.mode==='Single query'?MQ.find(x=>x[0]===s.k)[1]:`${s.bps.length} breakpoints`,
  pv:[['background','transparent'],['width','100%'],['height','auto'],['font','700 1.5rem "Bricolage Grotesque",system-ui,sans-serif'],['color','#1b2240'],['text-align','center']],out:s=>[],
- code:s=>`@media ${s.k==='print'?'print':'('+s.k+')'} {\n  .element {\n    /* styles */\n  }\n}`},
+ code:s=>s.mode==='Single query'?`@media ${s.k==='print'?'print':'('+s.k+')'} {\n  .element {\n    /* styles */\n  }\n}`:ladder(s)},
 scroll:{label:'scrollbar',cls:'kids sb',kids:14,s:{w:10,th:'#4a5bdc',tr:'#e8ebff',r:6},pv:[['width','260px'],['height','180px'],['overflow-y','scroll'],['display','block']],
  f:[['r','Width','w',4,20,1,'px'],['r','Thumb radius','r',0,10,1,'px'],['c','Thumb color','th'],['c','Track color','tr']],kidCss:()=>'margin-bottom:6px;height:34px',
  inject:s=>`.gbox.sb::-webkit-scrollbar{width:${s.w}px}.gbox.sb::-webkit-scrollbar-track{background:${s.tr}}.gbox.sb::-webkit-scrollbar-thumb{background:${s.th};border-radius:${s.r}px}`,out:s=>[],
@@ -177,8 +190,9 @@ anim:{label:'animation',s:{kf:'pulse',dur:1.2,ease:'ease-in-out',iter:'infinite'
  code:s=>`@keyframes ${s.kf} {\n${KF[s.kf].map(([k,v])=>`  ${k} {\n    ${v};\n  }`).join('\n')}\n}\n\n.element {\n  animation: ${s.kf} ${r3(s.dur)}s ${s.ease} ${s.iter};\n}`}
 };
 function buildGen(c){const g=G[mode],s=g.s;
- g.f.forEach(f=>c.append(f[0]==='r'?slider(f[1],s,f[2],f[3],f[4],f[5],f[6]):f[0]==='c'?colorRow(f[1],s,f[2]):
+ (typeof g.f==='function'?g.f(s):g.f).forEach(f=>c.append(f[0]==='r'?slider(f[1],s,f[2],f[3],f[4],f[5],f[6]):f[0]==='c'?colorRow(f[1],s,f[2]):
   f[0]==='chk'?h('label',{class:'inline'},h('input',{type:'checkbox',checked:s[f[2]]||null,onchange:e=>{s[f[2]]=e.target.checked;update()}}),f[1]):
+  f[0]==='multi'?h('div',{class:'inline'},...(f[3]?[h('span',{style:'color:var(--mute);font-size:.9rem;min-width:70px'},f[3])]:[]),...f[2].map(o=>h('button',{class:'chip',type:'button','aria-pressed':s[f[1]].includes(o),onclick:()=>{const a=s[f[1]],i=a.indexOf(o);i<0?a.push(o):a.splice(i,1);build();update()}},o+(f[4]||'')))):
   f[0]==='btn'?h('button',{class:'chip',type:'button',onclick:()=>{f[2](s);build();update()}},f[1]):
   h('div',{class:'inline'},...(f[3]?[h('span',{style:'color:var(--mute);font-size:.9rem;min-width:70px'},f[3])]:[]),...f[2].map(o=>h('button',{class:'chip',type:'button','aria-pressed':s[f[1]]===o,onclick:()=>{s[f[1]]=o;build();update()}},o)))))}
 function updateGen(sub,stage){const g=G[mode],s=g.s,o=g.out(s);
