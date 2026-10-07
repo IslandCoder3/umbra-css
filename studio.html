@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Umbra: CSS studio</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500..800&family=Instrument+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="style.css">
+<script src="theme.js"></script>
+</head>
+<body>
+<header class="site" id="top"><div class="siteIn"><a class="brand" href="index.html" aria-label="Umbra"><svg width="32" height="32" viewBox="0 0 28 28" aria-hidden="true"><circle cx="16" cy="16" r="9" fill="currentColor" opacity=".25"/><circle cx="12" cy="12" r="9" fill="var(--lamp)"/></svg><span class="wm">Umbra</span></a><nav class="links" aria-label="Main"><a href="index.html">Designs</a><a href="index.html#tools">Tools</a><a href="#top" aria-current="page">Studio</a></nav><button id="theme" class="tswitch" type="button" role="switch" aria-checked="true" aria-label="Dark mode" title="Toggle theme"><svg class="sun" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg><svg class="moon" viewBox="0 0 24 24" width="16" height="16" fill="currentColor" aria-hidden="true"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg><span class="knob"></span></button></div></header>
+<div class="shell">
+  <nav class="menu" aria-label="Tools"><div class="groups" id="groups"></div><div class="tabs" id="tabs" role="tablist"></div></nav>
+  <main class="studio">
+    <div class="stagewrap">
+      <div class="stage" id="stage">
+        <div id="subject"></div>
+        <button id="orb" type="button" aria-label="Lamp. Drag or use arrow keys to aim the shadow"></button>
+        <p class="hint" id="hint">Drag the lamp to aim the shadow</p>
+      </div>
+      <div class="codebar">
+        <div><span id="prop"></span><pre id="code" tabindex="0"></pre></div>
+        <button class="btn" id="copy" type="button">Copy CSS</button>
+      </div>
+      <div id="live" aria-live="polite" style="position:absolute;left:-9999px">&nbsp;</div>
+    </div>
+    <aside class="panel" id="controls" aria-label="Controls"></aside>
+  </main>
+</div>
+<footer class="foot"><span>Umbra. Plain CSS you can copy.</span><a href="#top">Back to top</a></footer>
+<script src="tools.js"></script>
+<script src="script.js"></script>
+</body>
+</html>
