@@ -286,3 +286,21 @@ body{overflow-x:clip}
  #dstudio[hidden]{display:none}
  .dfoot .chip,.dfoot .btn{min-height:44px;display:grid;place-items:center}
 }
+
+/* richer footer and back-to-top */
+.foot{max-width:none;margin:56px 0 0;padding:0;display:block;border-top:1px solid var(--line);background:linear-gradient(180deg,transparent,color-mix(in srgb,var(--panel) 80%,transparent))}
+.footIn{max-width:1200px;margin:0 auto;padding:42px 16px 26px;display:grid;grid-template-columns:1.6fr repeat(3,1fr);gap:28px}
+.flogo{display:flex;align-items:center;gap:10px;font:700 1.4rem "Bricolage Grotesque",system-ui,sans-serif;letter-spacing:-.03em;color:var(--ink)}
+.footBrand p{color:var(--mute);max-width:34ch;margin:12px 0 0}
+.foot h4{margin:0 0 12px;font-size:.78rem;letter-spacing:.09em;text-transform:uppercase;color:var(--mute)}
+.foot ul{list-style:none;margin:0;padding:0;display:grid;gap:9px}
+.foot a{color:var(--ink);text-decoration:none;opacity:.88}
+.foot a:hover{color:var(--lamp);opacity:1}
+.footBar{max-width:1200px;margin:0 auto;padding:16px 16px calc(24px + env(safe-area-inset-bottom,0px));border-top:1px solid var(--line);display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;color:var(--mute);font-size:.9rem}
+.totop{display:inline-flex;align-items:center;gap:8px;padding:9px 16px;border-radius:999px;border:1px solid var(--line);background:var(--panel);color:var(--ink);font:inherit;cursor:pointer;transition:border-color .2s,transform .2s}
+.totop:hover{border-color:var(--lamp);transform:translateY(-2px)}
+.fab{position:fixed;right:max(16px,env(safe-area-inset-right,0px));bottom:calc(16px + env(safe-area-inset-bottom,0px));width:48px;height:48px;border-radius:50%;border:0;display:grid;place-items:center;background:var(--lamp);color:var(--lamp-ink);box-shadow:0 10px 24px -8px rgba(0,0,0,.55);cursor:pointer;opacity:0;transform:translateY(14px);pointer-events:none;transition:opacity .2s,transform .2s;z-index:25}
+.fab.show{opacity:1;transform:none;pointer-events:auto}
+@media (max-width:860px){.footIn{grid-template-columns:1fr 1fr;padding-top:32px}.footBrand{grid-column:1/-1}}
+@media (max-width:640px){.footBar{flex-direction:column;align-items:flex-start}.totop{width:100%;justify-content:center;min-height:44px}.fab{width:46px;height:46px}}
+@media (prefers-reduced-motion:reduce){.fab,.totop{transition:none}}
