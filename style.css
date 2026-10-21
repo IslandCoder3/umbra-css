@@ -304,3 +304,8 @@ body{overflow-x:clip}
 @media (max-width:860px){.footIn{grid-template-columns:1fr 1fr;padding-top:32px}.footBrand{grid-column:1/-1}}
 @media (max-width:640px){.footBar{flex-direction:column;align-items:flex-start}.totop{width:100%;justify-content:center;min-height:44px}.fab{width:46px;height:46px}}
 @media (prefers-reduced-motion:reduce){.fab,.totop{transition:none}}
+
+/* clear selected and pressed states */
+.chip,.btn,.tabs button,.totop{transition:background .15s,border-color .15s,box-shadow .15s,transform .1s}
+.chip[aria-pressed="true"]{background:color-mix(in srgb,var(--lamp) 18%,var(--panel));font-weight:600}
+.chip:active,.btn:active,.tabs button:active,.totop:active{transform:scale(.96)}

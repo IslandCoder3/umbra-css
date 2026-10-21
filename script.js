@@ -107,6 +107,14 @@ const ladder=s=>{let prev='';return [...s.bps].map(Number).sort((a,b)=>s.dir==='
  const lab=s.cm?DEV(w):'',head=lab&&lab!==prev?(prev=lab,`/* ${lab} */\n`):'',pre=s.px==='only screen and'?'only screen':s.px==='screen and'?'screen':'';
  if(s.lay==='classic'){const c=`${s.dir} : ${w}px`;return head+(pre?`@media ${pre}\nand (${c}) {\n\n}`:`@media (${c}) {\n\n}`)}
  return head+`@media ${pre?pre+' and ':''}(${s.dir}: ${w}px) {\n  \n}`}).join('\n\n')};
+const WID=[320,375,768,1024,1280,1440,1920],STEPS=[-2,-1,0,1,2,3,4,5];
+const sz=(a,b,s,v)=>{const v2=Math.max(s.maxVw,s.minVw+1),sl=(b-a)/(v2-s.minVw),ic=a-sl*s.minVw;return Math.min(Math.max(a,b),Math.max(Math.min(a,b),ic+sl*v))};
+const spx=s=>sz(s.min,s.max,s,s.vw).toFixed(1);
+const cv=(a,b,s)=>{const v2=Math.max(s.maxVw,s.minVw+1),sl=(b-a)/(v2-s.minVw),ic=a-sl*s.minVw,u=s.unit==='rem'?s.root:1,U=s.unit==='rem'?'rem':'px';return `clamp(${r3(Math.min(a,b)/u)}${U}, ${r3(ic/u)}${U} ${sl<0?'-':'+'} ${r3(Math.abs(sl*100))}${s.per}, ${r3(Math.max(a,b)/u)}${U})`};
+const stepv=(s,n)=>[s.bmin*Math.pow(s.rmin,n),s.bmax*Math.pow(s.rmax,n)];
+const kidsOf=s=>s.mode==='Type scale'?8:({gap:3,margin:2,padding:1}[s.prop]||0);
+const eqb=(s,a,b,c,d)=>[s.x1,s.y1,s.x2,s.y2].every((v,i)=>Math.abs(v-[a,b,c,d][i])<.005);
+const eqL=(a,b)=>{const n=x=>[...x].map(Number).sort((p,q)=>p-q).join();return n(a)===n(b)};
 const G={
 gradient:{label:'background',s:{type:'linear',angle:135,p2:50,c1:'#ff9a3c',c2:'#e4457b',c3:'#3a4fd8',use3:true},
  f:[['sel','type',['linear','radial','conic']],['r','Angle','angle',0,360,1,'deg'],['r','Mid stop','p2',5,95,1,'%'],['c','Color 1','c1'],['c','Color 2','c2'],['c','Color 3','c3'],['chk','Use third color','use3'],['btn','Randomize colors',s=>{s.c1=rnd();s.c2=rnd();s.c3=rnd()}]],
@@ -128,10 +136,23 @@ flex:{label:'flexbox',cls:'kids v',kids:4,s:{dir:'row',jc:'flex-start',ai:'stret
 grid:{label:'css grid',cls:'kids v',kids:s=>Math.min(30,s.cols*s.rows),s:{cols:3,rows:2,gap:10,tr:'1fr'},pv:[['width','320px'],['height','220px']],
  f:[['r','Columns','cols',1,6,1,''],['r','Rows','rows',1,5,1,''],['r','Gap','gap',0,40,1,'px'],['sel','tr',['1fr','auto','minmax(0, 1fr)'],'Track size']],
  out:s=>[['display','grid'],['grid-template-columns',`repeat(${s.cols}, ${s.tr})`],['grid-template-rows',`repeat(${s.rows}, ${s.tr})`],['gap',s.gap+'px']]},
-clamp:{label:'font-size',last:1,txt:'Fluid type',s:{min:16,max:48,minVw:360,maxVw:1200,vw:800},
- f:[['r','Min size','min',8,64,1,'px'],['r','Max size','max',16,160,1,'px'],['r','Min viewport','minVw',280,800,10,'px'],['r','Max viewport','maxVw',800,2000,10,'px'],['r','Preview at','vw',280,2000,10,'px']],
- pv:s=>[['background','transparent'],['width','100%'],['height','auto'],['font-weight','800'],['color','#1b2240'],['font-family','"Bricolage Grotesque",system-ui,sans-serif'],['line-height','1.1'],['text-align','center'],['font-size',fl(s).px.toFixed(1)+'px']],
- out:s=>{const f=fl(s);return [['font-size',`clamp(${r3(s.min/16)}rem, ${r3(f.ic/16)}rem + ${r3(f.sl*100)}vw, ${r3(s.max/16)}rem)`],['',`${f.px.toFixed(1)}px at a ${s.vw}px viewport`]]}},
+clamp:{label:'fluid clamp',cls:s=>s.mode==='Type scale'?'kids sc':(kidsOf(s)?'kids':''),kids:kidsOf,
+ s:{mode:'Single value',prop:'font-size',min:16,max:48,minVw:360,maxVw:1200,vw:800,root:16,unit:'rem',per:'vw',bmin:16,bmax:18,rmin:1.2,rmax:1.333},
+ txt:s=>s.mode==='Single value'&&s.prop==='font-size'?'Fluid type':'',
+ f:s=>{const m=['sel','mode',['Single value','Type scale'],'Mode'],vp=[['r','Min viewport','minVw',280,800,10,'px'],['r','Max viewport','maxVw',800,2000,10,'px'],['r','Preview at','vw',280,2000,10,'px']],tail=[['r','Root size','root',10,24,1,'px'],['sel','unit',['rem','px'],'Units'],['sel','per',['vw','cqi'],'Scale with']];
+  return s.mode==='Type scale'?[m,['r','Base min','bmin',10,24,1,'px'],['r','Base max','bmax',12,32,1,'px'],['r','Ratio min','rmin',1.05,1.6,.01,''],['r','Ratio max','rmax',1.05,1.8,.01,''],...vp,...tail]
+  :[m,['btn','Body text',s=>Object.assign(s,{prop:'font-size',min:16,max:20}),s=>s.prop==='font-size'&&s.min==16&&s.max==20],['btn','Heading',s=>Object.assign(s,{prop:'font-size',min:32,max:72}),s=>s.prop==='font-size'&&s.min==32&&s.max==72],['btn','Section padding',s=>Object.assign(s,{prop:'padding',min:24,max:96}),s=>s.prop==='padding'&&s.min==24&&s.max==96],['btn','Grid gap',s=>Object.assign(s,{prop:'gap',min:12,max:32}),s=>s.prop==='gap'&&s.min==12&&s.max==32],
+   ['sel','prop',['font-size','padding','margin','gap','width','height'],'Property'],['r','Min size','min',1,200,1,'px'],['r','Max size','max',1,400,1,'px'],...vp,...tail]},
+ pv:s=>{if(s.mode==='Type scale')return [['width','100%'],['max-height','320px'],['overflow-y','auto'],['height','auto'],['display','block']];const px=spx(s)+'px',G2='linear-gradient(135deg,#4a5bdc,#8b9bff)';
+  return {'font-size':[['background','transparent'],['width','100%'],['height','auto'],['font-weight','800'],['color','#1b2240'],['font-family','"Bricolage Grotesque",system-ui,sans-serif'],['line-height','1.1'],['text-align','center'],['font-size',px]],
+   padding:[['width','320px'],['height','auto'],['padding',px]],gap:[['width','320px'],['height','auto'],['display','flex'],['gap',px]],margin:[['width','320px'],['height','auto']],
+   width:[['background',G2],['height','56px'],['width',px],['max-width','100%']],height:[['background',G2],['width','140px'],['height',px]]}[s.prop]},
+ kidTxt:(i,s)=>s.mode==='Type scale'?`Step ${STEPS[i]}: ${Math.round(sz(...stepv(s,STEPS[i]),s,s.vw))}px`:s.prop==='padding'?'content':s.prop==='margin'?'AB'[i]:i+1,
+ kidCss:(s,i)=>s.mode==='Type scale'?`background:none;color:#1b2240;display:block;text-align:left;padding:0;min-height:0;min-width:0;border-radius:0;font-weight:700;line-height:1.15;font-size:${sz(...stepv(s,STEPS[i]),s,s.vw).toFixed(1)}px`:s.prop==='padding'?'height:40px':s.prop==='margin'&&i===0?`margin-bottom:${spx(s)}px`:'',
+ out:s=>[],
+ code:s=>{if(s.mode==='Type scale')return `:root {\n${STEPS.map(n=>{const [a,b]=stepv(s,n);return `  --step-${n}: ${cv(a,b,s)};`}).join('\n')}\n}\n\n/* usage */\nh1 { font-size: var(--step-5); }\nh2 { font-size: var(--step-4); }\nh3 { font-size: var(--step-3); }\nh4 { font-size: var(--step-2); }\nh5 { font-size: var(--step-1); }\nbody { font-size: var(--step-0); }\nsmall { font-size: var(--step--1); }`+(s.per==='cqi'?'\n/* cqi needs container-type: inline-size on a parent element */':'');
+  const w=s.prop==='font-size'&&Math.max(s.min,s.max)/Math.min(s.min,s.max)>2.5;
+  return `${s.prop}: ${cv(s.min,s.max,s)};\n/* ${WID.map(x=>`${x}px: ${r3(sz(s.min,s.max,s,x))}px`).join(' | ')} */`+(w?'\n/* Warning: max is more than 2.5x min, so text may not reach 200% zoom (WCAG 1.4.4) */':'')+(s.per==='cqi'?'\n/* cqi needs container-type: inline-size on a parent element */':'')}},
 contrast:{label:'colors',s:{fg:'#1b2240',bg:'#ffd34d'},txt:s=>`${cr(s).toFixed(2)}:1  ${cr(s)>=4.5?'AA pass':'AA fail'}`,
  f:[['c','Text color','fg'],['c','Background','bg'],['btn','Swap colors',s=>{[s.fg,s.bg]=[s.bg,s.fg]}]],
  pv:s=>[['color',s.fg],['background',s.bg],['display','grid'],['place-items','center'],['font','800 1.6rem "Bricolage Grotesque",system-ui,sans-serif']],
@@ -152,7 +173,7 @@ units:{label:'font-size',s:{px:24,root:16},txt:s=>`${s.px}px = ${r3(s.px/s.root)
  pv:[['background','transparent'],['width','100%'],['height','auto'],['font','800 1.8rem "Bricolage Grotesque",system-ui,sans-serif'],['color','#1b2240'],['text-align','center']],
  out:s=>[['font-size',`${r3(s.px/s.root)}rem`],['',`${s.px}px at a ${s.root}px root size`]]},
 ease:{label:'easing',s:{x1:.25,y1:.1,x2:.25,y2:1},
- f:[['r','X1','x1',0,1,.01,''],['r','Y1','y1',-1,2,.01,''],['r','X2','x2',0,1,.01,''],['r','Y2','y2',-1,2,.01,''],['btn','Ease',s=>Object.assign(s,{x1:.25,y1:.1,x2:.25,y2:1})],['btn','Ease in',s=>Object.assign(s,{x1:.42,y1:0,x2:1,y2:1})],['btn','Ease out',s=>Object.assign(s,{x1:0,y1:0,x2:.58,y2:1})],['btn','Back out',s=>Object.assign(s,{x1:.34,y1:1.56,x2:.64,y2:1})],['btn','Snappy',s=>Object.assign(s,{x1:.2,y1:.9,x2:.1,y2:1})]],
+ f:[['r','X1','x1',0,1,.01,''],['r','Y1','y1',-1,2,.01,''],['r','X2','x2',0,1,.01,''],['r','Y2','y2',-1,2,.01,''],['btn','Ease',s=>Object.assign(s,{x1:.25,y1:.1,x2:.25,y2:1}),s=>eqb(s,0.25,0.1,0.25,1)],['btn','Ease in',s=>Object.assign(s,{x1:.42,y1:0,x2:1,y2:1}),s=>eqb(s,0.42,0,1,1)],['btn','Ease out',s=>Object.assign(s,{x1:0,y1:0,x2:.58,y2:1}),s=>eqb(s,0,0,0.58,1)],['btn','Back out',s=>Object.assign(s,{x1:.34,y1:1.56,x2:.64,y2:1}),s=>eqb(s,0.34,1.56,0.64,1)],['btn','Snappy',s=>Object.assign(s,{x1:.2,y1:.9,x2:.1,y2:1}),s=>eqb(s,0.2,0.9,0.1,1)]],
  inject:()=>'@keyframes ez{from{transform:translateX(-110px)}to{transform:translateX(110px)}}',
  pv:s=>[['width','34px'],['height','34px'],['border-radius','50%'],['background','linear-gradient(135deg,#4a5bdc,#8b9bff)'],['animation',`ez 1.6s ${bz(s)} infinite alternate`]],
  out:s=>[['transition-timing-function',bz(s)]]},
@@ -170,9 +191,9 @@ areas:{label:'grid-template-areas',cls:'kids v',kids:s=>AP[s.p].n.length,s:{p:'h
  code:s=>{const p=AP[s.p];return `.layout {\n  display: grid;\n  grid-template-areas:\n${p.a.map(x=>`    "${x}"`).join('\n')};\n  grid-template-columns: ${p.c};\n  grid-template-rows: ${p.r};\n  gap: ${s.gap}px;\n}\n\n${p.n.map(n=>`.${n} { grid-area: ${n}; }`).join('\n')}`}},
 media:{label:'media query',s:{mode:'Breakpoint ladder',k:'min-width: 768px',bps:[1400,1300,1200,1090,1024,1010,800,600,500],dir:'max-width',px:'only screen and',lay:'classic',cm:true},
  f:s=>{const m=['sel','mode',['Breakpoint ladder','Single query'],'Output'];return s.mode==='Single query'?[m,['sel','k',MQ.map(x=>x[0]),'Query']]:[m,
-  ['btn','My ladder',s=>Object.assign(s,{dir:'max-width',px:'only screen and',lay:'classic',bps:[1400,1300,1200,1090,1024,1010,800,600,500]})],
-  ['btn','Bootstrap 5',s=>Object.assign(s,{dir:'min-width',bps:[576,768,992,1200,1400]})],
-  ['btn','Tailwind',s=>Object.assign(s,{dir:'min-width',bps:[640,768,1024,1280,1536]})],
+  ['btn','My ladder',s=>Object.assign(s,{dir:'max-width',px:'only screen and',lay:'classic',bps:[1400,1300,1200,1090,1024,1010,800,600,500]}),s=>s.dir==='max-width'&&s.px==='only screen and'&&s.lay==='classic'&&eqL(s.bps,[1400,1300,1200,1090,1024,1010,800,600,500])],
+  ['btn','Bootstrap 5',s=>Object.assign(s,{dir:'min-width',bps:[576,768,992,1200,1400]}),s=>s.dir==='min-width'&&eqL(s.bps,[576,768,992,1200,1400])],
+  ['btn','Tailwind',s=>Object.assign(s,{dir:'min-width',bps:[640,768,1024,1280,1536]}),s=>s.dir==='min-width'&&eqL(s.bps,[640,768,1024,1280,1536])],
   ['sel','dir',['max-width','min-width'],'Direction'],['sel','px',['only screen and','screen and','none'],'Prefix'],['sel','lay',['classic','compact'],'Layout'],
   ['chk','Device comments','cm'],['multi','bps',BPS,'Sizes','px']]},
  txt:s=>s.mode==='Single query'?MQ.find(x=>x[0]===s.k)[1]:`${s.bps.length} breakpoints`,
@@ -192,10 +213,10 @@ function buildGen(c){const g=G[mode],s=g.s;
  (typeof g.f==='function'?g.f(s):g.f).forEach(f=>c.append(f[0]==='r'?slider(f[1],s,f[2],f[3],f[4],f[5],f[6]):f[0]==='c'?colorRow(f[1],s,f[2]):
   f[0]==='chk'?h('label',{class:'inline'},h('input',{type:'checkbox',checked:s[f[2]]||null,onchange:e=>{s[f[2]]=e.target.checked;update()}}),f[1]):
   f[0]==='multi'?h('div',{class:'inline'},...(f[3]?[h('span',{style:'color:var(--mute);font-size:.9rem;min-width:70px'},f[3])]:[]),...f[2].map(o=>h('button',{class:'chip',type:'button','aria-pressed':s[f[1]].includes(o),onclick:()=>{const a=s[f[1]],i=a.indexOf(o);i<0?a.push(o):a.splice(i,1);build();update()}},o+(f[4]||'')))):
-  f[0]==='btn'?h('button',{class:'chip',type:'button',onclick:()=>{f[2](s);build();update()}},f[1]):
+  f[0]==='btn'?(()=>{const b=h('button',{class:'chip',type:'button',onclick:()=>{f[2](s);build();update()}},f[1]);if(f[3])b.setAttribute('aria-pressed',!!f[3](s));return b})():
   h('div',{class:'inline'},...(f[3]?[h('span',{style:'color:var(--mute);font-size:.9rem;min-width:70px'},f[3])]:[]),...f[2].map(o=>h('button',{class:'chip',type:'button','aria-pressed':s[f[1]]===o,onclick:()=>{s[f[1]]=o;build();update()}},o)))))}
 function updateGen(sub,stage){const g=G[mode],s=g.s,o=g.out(s);
- sub.textContent=typeof g.txt==='function'?g.txt(s):(g.txt||'');sub.className='gbox'+(g.cls?' '+g.cls:'');
+ sub.textContent=typeof g.txt==='function'?g.txt(s):(g.txt||'');const cx=typeof g.cls==='function'?g.cls(s):g.cls;sub.className='gbox'+(cx?' '+cx:'');
  const nk=typeof g.kids==='function'?g.kids(s):(g.kids||0);for(let i=0;i<nk;i++){const k=document.createElement('i');k.textContent=g.kidTxt?g.kidTxt(i,s):i+1;if(g.kidCss)k.style.cssText=g.kidCss(s,i);sub.append(k)}
  stage.style.setProperty('--base',g.stage?g.stage(s):(g.base||'#d5dafb'));stage.style.setProperty('--glow',g.base?'rgba(255,255,255,.18)':'rgba(255,255,255,.7)');stage.classList.toggle('dark',!!g.base);
  let kf=document.getElementById('kf');if(!kf){kf=document.createElement('style');kf.id='kf';document.head.append(kf)}kf.textContent=g.inject?g.inject(s):'';

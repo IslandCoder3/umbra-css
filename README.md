@@ -24,7 +24,7 @@ Built as a go-to reference for front-end developers, Umbra pairs a gallery of 82
   - Shape: border radius, clip-path, transform, border
   - Color: gradient, palette (50 to 900 shades), HEX/RGB/HSL converter, contrast checker, blend modes
   - Layout: flexbox, grid, grid areas
-  - Type and units: typography, fluid type with `clamp()`, px to rem
+  - Type and units: typography, fluid clamp generator (font-size, padding, margin, gap, width or height, plus a full fluid type scale as CSS custom properties, rem or px output, vw or cqi scaling and a size table), px to rem
   - Motion: keyframe animation, cubic-bezier easing
   - Responsive and UI: media queries, custom scrollbar
 - Draggable lamp in the shadow tools that aims the shadow direction directly on the preview
