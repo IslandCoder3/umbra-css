@@ -114,12 +114,12 @@ const MAP={
  filter:p=>{if(!p.filter)return null;const o={};let hit=0;for(const t of spl(p.filter)){const m=t.match(/^([\w-]+)\((.*)\)$/);if(!m)continue;const n=parseFloat(m[2]),pct=/%/.test(m[2])?n:n*100;
   const k={blur:['blur',n],brightness:['brightness',pct],contrast:['contrast',pct],grayscale:['grayscale',pct],invert:['invert',pct],saturate:['saturate',pct],sepia:['sepia',pct],opacity:['opacity',pct],'hue-rotate':['hue',n]}[m[1]];
   if(k){o[k[0]]=k[1];hit++}else if(m[1]==='drop-shadow'){const l=layer(m[2],0);if(l){o.ds={on:true,x:cl(l.x,-40,40),y:cl(l.y,-40,40),b:cl(l.b,0,40),c:l.c,a:l.a};hit++}}}return hit?o:null},
- glass:p=>{const bf=p['backdrop-filter'];if(!bf)return null;const bg=pc(p.background);if(!bg||bg.c!=='#ffffff')return null;const bl=bf.match(/blur\((\d+)px\)/),sa=bf.match(/saturate\((\d+)%\)/),bc=(p.border||'').match(/rgba?\([^)]*\)/),br=(p['border-radius']||'').match(/^(\d+)px$/);
-  return{blur:bl?cl(+bl[1],0,40):10,alpha:cl(bg.a,0,.8),sat:sa?cl(+sa[1],100,250):100,border:bc?cl(pc(bc[0]).a,0,1):.3,radius:br?cl(+br[1],0,60):20}},
+ glass:p=>{const bf=p['backdrop-filter'];if(!bf)return null;const bg=pc(p.background);if(!bg)return null;const bl=bf.match(/blur\((\d+)px\)/),sa=bf.match(/saturate\((\d+)%\)/),bc=(p.border||'').match(/rgba?\([^)]*\)/),br=(p['border-radius']||'').match(/^(\d+)px$/);
+  return{tint:bg.c,blur:bl?cl(+bl[1],0,40):10,alpha:cl(bg.a,0,.8),sat:sa?cl(+sa[1],100,250):100,border:bc?cl(pc(bc[0]).a,0,1):.3,radius:br?cl(+br[1],0,60):20}},
  gradient:p=>{const v=p.background||p['background-image'];if(!v||splitTop(v).length!==1)return null;const m=v.match(/^(linear|radial|conic)-gradient\((.*)\)$/i);if(!m)return null;const a=splitTop(m[2]);let ang=m[1]==='linear'?180:0;
   if(/^(\d+(\.\d+)?deg|to |circle|ellipse|from |at |closest|farthest)/.test(a[0])){const c=a.shift(),d=c.match(/(\d+(\.\d+)?)deg/);if(d)ang=+d[1];else if(/to right/.test(c))ang=90;else if(/to left/.test(c))ang=270;else if(/to top/.test(c))ang=0}
   const sp=a.map(x=>{const t=spl(x),c=pc(t[0]),ps=(t[1]||'').match(/^(\d+(\.\d+)?)%$/);return c?{c:c.c,p:ps?+ps[1]:null}:null});if(sp.length<2||sp.includes(null))return null;
-  return sp.length===2?{type:m[1],angle:ang,use3:false,c1:sp[0].c,c2:sp[1].c}:{type:m[1],angle:ang,use3:true,c1:sp[0].c,c2:sp[1].c,c3:sp[sp.length-1].c,p2:cl(sp[1].p==null?50:sp[1].p,5,95)}},
+  const n=Math.min(5,sp.length),o={type:m[1],angle:ang,n};sp.slice(0,n).forEach((x,i)=>o['c'+(i+1)]=x.c);if(n===3)o.p2=cl(sp[1].p==null?50:sp[1].p,5,95);return o},
  radius:p=>{const v=p['border-radius'];if(!v||/px|em|calc/.test(v))return null;const h=v.split('/').map(x=>x.trim().split(/\s+/).map(parseFloat));if(h.some(x=>x.some(isNaN)))return null;
   const ex=x=>x.length===1?[x[0],x[0],x[0],x[0]]:x.length===2?[x[0],x[1],x[0],x[1]]:x.length===3?[x[0],x[1],x[2],x[1]]:x.slice(0,4),H=ex(h[0]),V=ex(h[1]||h[0]);return Object.fromEntries('abcdefgh'.split('').map((k,i)=>[k,cl(i<4?H[i]:V[i-4],0,100)]))},
  clip:p=>{const v=(p['clip-path']||'').replace(/\s+/g,''),k=Object.keys(CP).find(x=>CP[x].replace(/\s+/g,'')===v);return k?{shape:k}:null}
