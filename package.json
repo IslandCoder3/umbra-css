@@ -1,0 +1,13 @@
+{
+  "name": "umbra-css",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Umbra: copy-ready CSS designs and generators. The site itself needs no build step; this file only holds the optional smoke tests.",
+  "scripts": {
+    "test": "node tests/smoke.mjs",
+    "serve": "npx http-server -p 8080 -c-1"
+  },
+  "devDependencies": {
+    "playwright": "^1.56.0"
+  }
+}

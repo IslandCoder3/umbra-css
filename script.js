@@ -24,7 +24,8 @@ function colorRow(label,o,ck,ak){
  const wrap=h('div',{class:'inline'},h('span',{},label),c);return wrap;
 }
 function chips(map,fn){return h('div',{class:'inline'},...Object.keys(map).map(n=>h('button',{class:'chip',type:'button',onclick:()=>fn(n)},n)))}
-function build(){
+function build(){build0();savedPanel()}
+function build0(){
  const c=$('#controls');c.replaceChildren();if(G[mode]){buildGen(c);return}
  if(mode==='filter'){
   const f=S.filter;
@@ -334,8 +335,17 @@ orb.addEventListener('pointerup',()=>{drag=false});
 orb.addEventListener('keydown',e=>{const t=tgt(),d={ArrowLeft:[1,0],ArrowRight:[-1,0],ArrowUp:[0,1],ArrowDown:[0,-1]}[e.key];
  if(!t||!d)return;e.preventDefault();const n=e.shiftKey?5:1;t.x+=d[0]*n;t.y+=d[1]*n;build();update()});
 addEventListener('resize',placeOrb);
+const stateOf=m=>m==='box'||m==='text'?S[m]:m==='filter'?S.filter:G[m].s;
+const LK='umbra-looks',lkLoad=()=>{try{return JSON.parse(localStorage.getItem(LK)||'[]')}catch(e){return[]}},lkSave=a=>{try{localStorage.setItem(LK,JSON.stringify(a.slice(0,40)))}catch(e){}};
+function savedPanel(){const c=$('#controls'),mine=lkLoad().filter(l=>l.tool===mode),old=c.querySelector('.sl');if(old)old.remove();
+ const g=h('div',{class:'group sl'},h('b',{class:'lbl'},`Saved looks (${mine.length})`));
+ if(!mine.length)g.append(h('p',{class:'hint2'},'Press Save look under the code to keep this setting in your browser.'));
+ mine.forEach(l=>g.append(h('div',{class:'svrow'},h('button',{class:'chip',type:'button',title:l.css.split('\n')[0],onclick:()=>{handoff(l.tool,encodeURIComponent(JSON.stringify(l.state)));setMode(l.tool)}},l.name),h('button',{class:'chip x',type:'button','aria-label':'Delete '+l.name,onclick:()=>{lkSave(lkLoad().filter(z=>z.id!==l.id));savedPanel()}},'\u00d7'))));
+ c.append(g)}
+$('#save').addEventListener('click',()=>{const all=lkLoad(),n=all.filter(l=>l.tool===mode).length+1,lab=(TOOLS.flatMap(g=>g[1]).find(t=>t[0]===mode)||[0,mode])[1],b=$('#save');
+ all.unshift({id:Date.now().toString(36),tool:mode,name:lab+' '+n,state:JSON.parse(JSON.stringify(stateOf(mode))),css:OUT.css,ts:Date.now()});lkSave(all);savedPanel();b.textContent='Saved';setTimeout(()=>{b.textContent='Save look'},1400)});
 FMT.forEach(([k,l])=>{const b=h('button',{class:'chip',type:'button',onclick:()=>{fmt=k;showCode()}},l);b.dataset.f=k;$('#fmts').append(b)});
-$('#share').addEventListener('click',async()=>{const st=mode==='box'||mode==='text'?S[mode]:mode==='filter'?S.filter:G[mode].s,u=location.href.split('#')[0]+'#'+mode+':'+encodeURIComponent(JSON.stringify(st)),b=$('#share');
+$('#share').addEventListener('click',async()=>{const st=stateOf(mode),u=location.href.split('#')[0]+'#'+mode+':'+encodeURIComponent(JSON.stringify(st)),b=$('#share');
  try{await navigator.clipboard.writeText(u)}catch(e){const ta=document.createElement('textarea');ta.value=u;document.body.append(ta);ta.select();try{document.execCommand('copy')}catch(_){}ta.remove()}
  b.textContent='Link copied';$('#live').textContent='Link copied to clipboard';setTimeout(()=>{b.textContent='Share link'},1400)});
 addEventListener('resize',()=>{if(G[mode]&&G[mode].handles)update()});

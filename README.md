@@ -14,10 +14,14 @@ Built as a go-to reference for front-end developers, Umbra pairs a gallery of 82
 
 ## Features
 
-- Gallery of 82 ready-made designs across 12 categories: Shadows, Gradients, Backgrounds, Buttons, Cards, Glass, Shapes, Text, Filters, Loaders, Hover and Components
+- Gallery of over 120 ready-made designs across 12 categories: Shadows, Gradients, Backgrounds, Buttons, Cards, Glass, Shapes, Text, Filters, Loaders, Hover and Components
 - Live previews on every card, with interactive designs (hover effects, toggles, inputs, loaders) that work right on the card
 - One-tap "Copy CSS" on each design, plus an "Edit" panel that opens the code beside a live preview so changes show as you type (a bottom sheet on mobile), with Reset and copy-your-edit
 - "Open in studio" button in the edit panel that sends the design, including your edits, to the matching generator (box shadow, text shadow, filter, gradient, radius, clip-path or glass) with its values already filled in
+- Favorites (a heart on every design, remembered in the browser) and a direct link to every design, for example `index.html#soft-lift`
+- "Save look" in the studio keeps your own generator settings in the browser, next to Share link
+- Installable as an app and usable offline (web app manifest and service worker)
+- Share previews (Open Graph and Twitter cards), favicon and app icons, a custom 404 page, `robots.txt` and `sitemap.xml`
 - Category filter chips with counts and instant search (press `/` to jump to the search box)
 - Studio with 29 generators in 7 groups:
   - Effects: box shadow, text shadow, filter, glass (with tint), neumorphism
@@ -37,4 +41,4 @@ Built as a go-to reference for front-end developers, Umbra pairs a gallery of 82
 
 ## Tech Stack
 
-Vanilla HTML, CSS, and JavaScript — no frameworks or build tools required to run it. Fonts load from Google Fonts.
+Vanilla HTML, CSS, and JavaScript — no frameworks or build tools required to run it. Fonts load from Google Fonts. Optional smoke tests (`npm install`, `npx playwright install chromium`, then `npm test`) check every design, every generator, share links, mobile overflow and the metadata files.

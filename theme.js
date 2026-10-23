@@ -16,4 +16,9 @@ document.addEventListener('DOMContentLoaded',function(){
  function chk(){q=0;var s=window.scrollY,end=document.documentElement.scrollHeight-window.innerHeight-220;b.classList.toggle('show',s>600&&s<end)}
  addEventListener('scroll',function(){if(!q)q=requestAnimationFrame(chk)},{passive:true});chk();
 });
+
+if('serviceWorker' in navigator&&(location.protocol==='https:'||location.hostname==='localhost'))addEventListener('load',function(){navigator.serviceWorker.register('sw.js').catch(function(){})});
+addEventListener('beforeinstallprompt',function(e){e.preventDefault();window.__ip=e;document.querySelectorAll('[data-install]').forEach(function(b){b.hidden=false})});
+addEventListener('appinstalled',function(){window.__ip=null;document.querySelectorAll('[data-install]').forEach(function(b){b.hidden=true})});
+document.addEventListener('click',function(e){var b=e.target.closest&&e.target.closest('[data-install]');if(b&&window.__ip){window.__ip.prompt();window.__ip=null;b.hidden=true}});
 })();
