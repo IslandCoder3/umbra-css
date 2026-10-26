@@ -368,3 +368,17 @@ body{overflow-x:clip}
 /* solid header so content never ghosts through it */
 .site{background:var(--bg)}
 .bar{background:var(--bg)}
+
+/* undo, import, support notes */
+.hbar{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px}
+.hbar .chip{padding:5px 12px;font-size:.88rem}
+.hbar .chip:disabled{opacity:.4;cursor:default}
+.imp{margin:0 0 12px}.impmsg{color:var(--mute);font-size:.85rem}
+.btn.small{padding:7px 16px;font-size:.9rem}
+.sup{margin:14px 0 0;color:var(--mute);font-size:.82rem;line-height:1.45}
+
+/* handle styles for easing, gradient stops, angle dial and radius */
+.hnd.bz{background:#e4457b}
+.hnd.stop{width:16px;height:24px;margin:-12px 0 0 -8px;border-radius:5px}
+.hnd.dial{background:#fff;border-color:var(--lamp);width:24px;height:24px;margin:-12px 0 0 -12px}
+.hnd.edge{width:16px;height:16px;margin:-8px 0 0 -8px;border-radius:4px;background:#12a39a}

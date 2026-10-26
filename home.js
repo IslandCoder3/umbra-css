@@ -130,7 +130,6 @@ const ORDER=['Shadows','Gradients','Backgrounds','Buttons','Cards','Glass','Shap
 const BASE={card:'width:160px;height:160px;border-radius:18px',btn:'padding:14px 28px;border:0;font-weight:600;cursor:pointer',txt:'font-size:3rem;font-weight:800',photo:''};
 const slug=n=>{const s=n.toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'');return /^\d/.test(s)?'x-'+s:s};
 const join=(k,css)=>[BASE[k],css].filter(Boolean).join(';');
-const splitTop=v=>{const o=[];let d=0,s='';for(const ch of v){if(ch==='(')d++;if(ch===')')d--;if(ch===','&&!d){o.push(s.trim());s=''}else s+=ch}o.push(s.trim());return o};
 const fmt=x=>{const i=x.indexOf(':'),p=x.slice(0,i).trim(),v=x.slice(i+1).trim(),parts=splitTop(v);return parts.length>1&&/^(box-shadow|text-shadow|background)$/.test(p)?`  ${p}:\n${parts.map(q=>'    '+q).join(',\n')};`:`  ${p}: ${v};`};
 const codeDecl=d=>`.${slug(d[1])} {\n${join(d[2],d[3]).split(';').map(x=>x.trim()).filter(Boolean).map(fmt).join('\n')}\n}`;
 const sg=d=>slug(d[1]),raw=d=>d[3].replace(/__/g,sg(d));
@@ -142,31 +141,6 @@ async function copy(t,name){
  $('#live').textContent='Copied '+name;
 }
 function el(t,c,x){const e=document.createElement(t);if(c)e.className=c;if(x)e.textContent=x;return e}
-const cl=(v,a,b)=>Math.max(a,Math.min(b,v));
-const spl=v=>{const o=[];let d=0,s='';for(const ch of v){if(ch==='(')d++;if(ch===')')d--;if(ch===' '&&!d){if(s)o.push(s);s=''}else s+=ch}if(s)o.push(s);return o};
-const pc=x=>{x=(x||'').trim();let m=x.match(/^#([0-9a-f]{3,8})$/i);if(m){let h=m[1];if(h.length<=4)h=[...h].map(c=>c+c).join('');return{c:'#'+h.slice(0,6),a:h.length===8?+(parseInt(h.slice(6),16)/255).toFixed(2):1}}
- m=x.match(/^rgba?\(([^)]*)\)$/i);if(m){const p=m[1].split(/[ ,\/]+/).filter(Boolean).map(parseFloat);return{c:'#'+p.slice(0,3).map(v=>Math.round(v).toString(16).padStart(2,'0')).join(''),a:p[3]==null||isNaN(p[3])?1:p[3]}}return null};
-const declsOf=t=>{const m=t.match(/\{([\s\S]*)\}/),o={};(m?m[1]:t).split(';').forEach(x=>{const i=x.indexOf(':');if(i>0)o[x.slice(0,i).trim()]=x.slice(i+1).trim().replace(/\s+/g,' ')});return o};
-const layer=(str,box)=>{let s=str.trim(),inset=false;if(/\binset\b/.test(s)){inset=true;s=s.replace(/\binset\b/,'').trim()}const cm=s.match(/rgba?\([^)]*\)|#[0-9a-f]{3,8}\b/i),col=cm?pc(cm[0]):null;if(cm)s=s.replace(cm[0],'').trim();
- const n=s.split(/\s+/).filter(Boolean).map(parseFloat);if(n.length<2||n.some(isNaN))return null;return{x:cl(n[0],-60,60),y:cl(n[1],-60,60),b:cl(n[2]||0,0,100),s:box?cl(n[3]||0,-40,40):0,c:col?col.c:'#000000',a:col?col.a:1,inset}};
-const shadows=(v,box)=>{const L=splitTop(v).slice(0,5).map(x=>layer(x,box));return L.length&&!L.includes(null)?L:null};
-const MAP={
- box:(p,st)=>{const L=p['box-shadow']&&shadows(p['box-shadow'],1);if(!L)return null;const bg=pc(p.background||p['background-color']);return{layers:L,bg:st==='dark'?'#141831':'#d5dafb',el:bg?bg.c:(st==='dark'?'#141831':'#ffffff')}},
- text:(p,st)=>{const L=p['text-shadow']&&shadows(p['text-shadow'],0);if(!L)return null;const c=pc(p.color);return{layers:L,bg:st==='dark'?'#12162b':'#d5dafb',el:c?c.c:'#1b2240'}},
- filter:p=>{if(!p.filter)return null;const o={};let hit=0;for(const t of spl(p.filter)){const m=t.match(/^([\w-]+)\((.*)\)$/);if(!m)continue;const n=parseFloat(m[2]),pct=/%/.test(m[2])?n:n*100;
-  const k={blur:['blur',n],brightness:['brightness',pct],contrast:['contrast',pct],grayscale:['grayscale',pct],invert:['invert',pct],saturate:['saturate',pct],sepia:['sepia',pct],opacity:['opacity',pct],'hue-rotate':['hue',n]}[m[1]];
-  if(k){o[k[0]]=k[1];hit++}else if(m[1]==='drop-shadow'){const l=layer(m[2],0);if(l){o.ds={on:true,x:cl(l.x,-40,40),y:cl(l.y,-40,40),b:cl(l.b,0,40),c:l.c,a:l.a};hit++}}}return hit?o:null},
- glass:p=>{const bf=p['backdrop-filter'];if(!bf)return null;const bg=pc(p.background);if(!bg)return null;const bl=bf.match(/blur\((\d+)px\)/),sa=bf.match(/saturate\((\d+)%\)/),bc=(p.border||'').match(/rgba?\([^)]*\)/),br=(p['border-radius']||'').match(/^(\d+)px$/);
-  return{tint:bg.c,blur:bl?cl(+bl[1],0,40):10,alpha:cl(bg.a,0,.8),sat:sa?cl(+sa[1],100,250):100,border:bc?cl(pc(bc[0]).a,0,1):.3,radius:br?cl(+br[1],0,60):20}},
- gradient:p=>{const v=p.background||p['background-image'];if(!v||splitTop(v).length!==1)return null;const m=v.match(/^(linear|radial|conic)-gradient\((.*)\)$/i);if(!m)return null;const a=splitTop(m[2]);let ang=m[1]==='linear'?180:0;
-  if(/^(\d+(\.\d+)?deg|to |circle|ellipse|from |at |closest|farthest)/.test(a[0])){const c=a.shift(),d=c.match(/(\d+(\.\d+)?)deg/);if(d)ang=+d[1];else if(/to right/.test(c))ang=90;else if(/to left/.test(c))ang=270;else if(/to top/.test(c))ang=0}
-  const sp=a.map(x=>{const t=spl(x),c=pc(t[0]),ps=(t[1]||'').match(/^(\d+(\.\d+)?)%$/);return c?{c:c.c,p:ps?+ps[1]:null}:null});if(sp.length<2||sp.includes(null))return null;
-  const n=Math.min(5,sp.length),o={type:m[1],angle:ang,n};sp.slice(0,n).forEach((x,i)=>o['c'+(i+1)]=x.c);if(n===3)o.p2=cl(sp[1].p==null?50:sp[1].p,5,95);return o},
- radius:p=>{const v=p['border-radius'];if(!v||/px|em|calc/.test(v))return null;const h=v.split('/').map(x=>x.trim().split(/\s+/).map(parseFloat));if(h.some(x=>x.some(isNaN)))return null;
-  const ex=x=>x.length===1?[x[0],x[0],x[0],x[0]]:x.length===2?[x[0],x[1],x[0],x[1]]:x.length===3?[x[0],x[1],x[2],x[1]]:x.slice(0,4),H=ex(h[0]),V=ex(h[1]||h[0]);return Object.fromEntries('abcdefgh'.split('').map((k,i)=>[k,cl(i<4?H[i]:V[i-4],0,100)]))},
- clip:p=>{const v=(p['clip-path']||'').replace(/\s+/g,''),k=Object.keys(CP).find(x=>CP[x].replace(/\s+/g,'')===v);return k?{shape:k}:null}
-};
-const BYCAT={Shapes:['clip','radius','gradient'],Glass:['glass'],Gradients:['gradient'],Backgrounds:['gradient'],Text:['text','gradient'],Filters:['filter'],Shadows:['box'],Buttons:['box','glass','gradient','radius'],x:['box','text','filter','gradient','radius','clip']};
 function studioLink(){const a=$('#dstudio');let r=null;
  if(cur&&cur[2]!=='raw'){const p=declsOf($('#dcode').value);for(const t of BYCAT[cur[0]]||BYCAT.x){const st=MAP[t](p,cur[4]);if(st){r=[t,st];break}}}
  a.hidden=!r;if(r){a.href='studio.html#'+r[0]+':'+encodeURIComponent(JSON.stringify(r[1]));a.textContent='Open in '+TOOLS.flatMap(x=>x[1]).find(t=>t[0]===r[0])[1]}}
@@ -203,9 +177,11 @@ let cat='All',built=false;const TL=[];
 const idle=window.requestIdleCallback?f=>requestIdleCallback(f,{timeout:300}):f=>setTimeout(f,16);
 const match=d=>{const q=$('#q').value.trim().toLowerCase();return(cat==='All'||(cat==='Favorites'?FAV.has(slug(d[1])):d[0]===cat))&&(!q||(d[1]+' '+d[0]).toLowerCase().includes(q))};
 function pressed(){document.querySelectorAll('#filters .chip').forEach(c=>c.setAttribute('aria-pressed',c.dataset.c===cat))}
+function gTop(){const g=$('#gallery'),hd=document.querySelector('.site'),bar=document.querySelector('.bar'),y=g.getBoundingClientRect().top+scrollY-(hd?hd.offsetHeight:0)-(bar?bar.offsetHeight:0)-12;
+ if(scrollY>y){const r=window.matchMedia&&matchMedia('(prefers-reduced-motion: reduce)').matches;scrollTo({top:Math.max(0,y),behavior:r?'auto':'smooth'})}}
 function render(){let n=0;for(const[d,t]of TL){const m=match(d);t.hidden=!m;if(m)n++}$('#empty').textContent=cat==='Favorites'?'No favorites yet. Tap the heart on any design to save it here.':'No designs match. Try another word or category.';$('#empty').hidden=!(built&&!n);pressed()}
 function build(i){const f=document.createDocumentFragment(),end=Math.min(D.length,i+16);for(;i<end;i++){const t=tile(D[i]);t.hidden=!match(D[i]);TL.push([D[i],t]);f.append(t)}$('#gallery').append(f);if(i<D.length)idle(()=>build(i));else{built=true;render()}}
-['All','Favorites',...new Set(D.map(d=>d[0]))].forEach(c=>{const b=el('button','chip',c);b.dataset.c=c;b.append(el('span','n',String(c==='All'?D.length:c==='Favorites'?FAV.size:D.filter(d=>d[0]===c).length)));b.type='button';b.onclick=()=>{cat=c;render()};$('#filters').append(b)});
+['All','Favorites',...new Set(D.map(d=>d[0]))].forEach(c=>{const b=el('button','chip',c);b.dataset.c=c;b.append(el('span','n',String(c==='All'?D.length:c==='Favorites'?FAV.size:D.filter(d=>d[0]===c).length)));b.type='button';b.onclick=()=>{cat=c;render();gTop()};$('#filters').append(b)});
 $('#lead').textContent=`${D.length} ready-made designs and ${TOOLS.reduce((a,t)=>a+t[1].length,0)} generators for shadows, gradients, layout, type and motion. Everything is plain CSS you can paste straight into your project.`;
 TOOLS.forEach(t=>{const c=el('div','tgroup'),l=el('div','tlinks');c.append(el('b',0,t[0]));t[1].forEach(x=>{const a=el('a','chip',x[1]);a.href='studio.html#'+x[0];l.append(a)});c.append(l);$('#tgrid').append(c)});
 let pmE=null,pmR=0;document.addEventListener('pointermove',e=>{if(e.pointerType==='touch')return;pmE=e;if(pmR)return;pmR=requestAnimationFrame(()=>{pmR=0;const s=pmE.target.closest&&pmE.target.closest('.tstage');if(!s)return;const r=s.getBoundingClientRect();s.style.setProperty('--lx',pmE.clientX-r.left+'px');s.style.setProperty('--ly',pmE.clientY-r.top+'px')})});

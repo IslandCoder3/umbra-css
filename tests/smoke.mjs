@@ -57,6 +57,12 @@ const open = async (url, w = 1280, mobile = false) => {
   await page.evaluate(() => document.querySelector('#tools').scrollIntoView()); await page.waitForTimeout(300);
   const navTools = await page.evaluate(() => document.querySelector('.links [aria-current]').textContent);
   check('nav highlights Designs at the top and Tools in its section', navTop === 'Designs' && navTools === 'Tools', navTop + ' / ' + navTools);
+  for (const cat of ['Cards', 'Glass']) {
+    await page.evaluate(() => window.scrollTo(0, document.documentElement.scrollHeight)); await page.waitForTimeout(200);
+    await page.evaluate(c => document.querySelector(`#filters [data-c="${c}"]`).click(), cat); await page.waitForTimeout(1400);
+    const off = await page.evaluate(() => { const t = [...document.querySelectorAll('.tile')].find(x => !x.hidden).getBoundingClientRect().top, head = document.querySelector('.site').offsetHeight + document.querySelector('.bar').offsetHeight; return t - head });
+    check(`category click scrolls to the first designs: ${cat}`, off >= 0 && off <= 60, `offset ${Math.round(off)}px`);
+  }
   check('gallery has no console errors', errors.length === 0, errors.join(' | '));
   await ctx.close();
 }
@@ -65,7 +71,7 @@ const open = async (url, w = 1280, mobile = false) => {
 {
   const { ctx, page, errors } = await open('studio.html');
   const ids = await page.evaluate(() => TOOLS.flatMap(g => g[1].map(t => t[0])));
-  check('studio has 29 tools', ids.length === 29, String(ids.length));
+  check('studio has 30 tools', ids.length === 30, String(ids.length));
   const bad = [];
   for (const id of ids) {
     await page.evaluate(i => { location.hash = '#' + i }, id); await page.waitForTimeout(90);
@@ -93,6 +99,37 @@ const open = async (url, w = 1280, mobile = false) => {
   await page.click('#save'); await page.reload(); await page.waitForTimeout(300);
   check('saved looks persist', await page.evaluate(() => document.querySelectorAll('.svrow').length === 1));
   check('studio has no console errors', errors.length === 0, errors.join(' | '));
+  await ctx.close();
+}
+
+// 2b. Editing features: undo, import, draggable handles, steps, formatter
+{
+  const { ctx, page, errors } = await open('studio.html#box');
+  const code = () => page.evaluate(() => document.querySelector('#code').textContent);
+  const click = label => page.evaluate(l => [...document.querySelectorAll('#controls button')].find(b => b.textContent === l).click(), label);
+  const drag = async (i, dx, dy) => { const bb = await page.locator('.hnd').nth(i).boundingBox(); const x = bb.x + bb.width / 2, y = bb.y + bb.height / 2; await page.mouse.move(x, y); await page.mouse.down(); await page.mouse.move(x + dx, y + dy, { steps: 6 }); await page.mouse.up(); await page.waitForTimeout(200) };
+  const c0 = await code();
+  await page.evaluate(() => { const r = [...document.querySelectorAll('#controls input[type=range]')].find(x => x.id.startsWith('s_Blur')); r.value = 60; r.dispatchEvent(new Event('input')) });
+  const c1 = await code(); await click('Undo'); const u = await code(); await click('Redo'); const r = await code(); await click('Reset'); const z = await code();
+  check('undo, redo and reset work', c1 !== c0 && u === c0 && r === c1 && z === c0);
+  await click('Import CSS'); await page.fill('.imp textarea', 'background: linear-gradient(90deg, #111 0%, #f0f 100%);'); await click('Apply'); await page.waitForTimeout(250);
+  check('pasting CSS opens the matching tool', await page.evaluate(() => document.querySelector('#tabs [aria-selected=true]').textContent === 'Gradient') && /linear-gradient\(90deg/.test(await code()));
+  await click('Import CSS'); await page.fill('.imp textarea', 'font-size: clamp(1rem, 0.143rem + 3.81vw, 3rem);'); await click('Apply'); await page.waitForTimeout(250);
+  check('pasted clamp() is read back', (await code()).startsWith('font-size: clamp(1rem, 0.143rem + 3.81vw, 3rem)'), (await code()).split('\n')[0]);
+  await page.goto(BASE + 'studio.html#ease'); await page.waitForTimeout(300);
+  const e0 = await code(); await drag(0, 60, -80); check('easing curve handle drags', (await code()) !== e0);
+  await page.goto(BASE + 'studio.html#gradient'); await page.waitForTimeout(300);
+  const g0 = await code(); await drag(1, -60, 0); check('gradient stop handle drags', (await code()) !== g0);
+  const n = await page.evaluate(() => document.querySelectorAll('.hnd').length); const g1 = await code(); await drag(n - 1, 0, -70); check('gradient angle dial drags', (await code()) !== g1);
+  await page.goto(BASE + 'studio.html#radius'); await page.waitForTimeout(300);
+  const r0 = await code(); await drag(0, -70, 0); check('radius handle drags', (await code()) !== r0);
+  await page.goto(BASE + 'studio.html#fmt'); await page.waitForTimeout(300);
+  check('formatter formats CSS', /\.card \{\n  display: flex;/.test(await code()));
+  await click('Minify'); check('formatter minifies CSS', !(await code()).includes('\n') && (await code()).startsWith('.card{display:flex'));
+  await page.goto(BASE + 'studio.html#anim'); await page.waitForTimeout(300); await click('custom');
+  const pct = async () => (await code()).match(/\n  \d+%/g).length;
+  const s0 = await pct(); await click('Add step'); check('animation keyframe steps can be added', (await pct()) === s0 + 1);
+  check('studio editing has no console errors', errors.length === 0, errors.join(' | '));
   await ctx.close();
 }
 

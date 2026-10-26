@@ -24,7 +24,7 @@ function colorRow(label,o,ck,ak){
  const wrap=h('div',{class:'inline'},h('span',{},label),c);return wrap;
 }
 function chips(map,fn){return h('div',{class:'inline'},...Object.keys(map).map(n=>h('button',{class:'chip',type:'button',onclick:()=>fn(n)},n)))}
-function build(){build0();savedPanel()}
+function build(){build0();histBar();supNote();savedPanel()}
 function build0(){
  const c=$('#controls');c.replaceChildren();if(G[mode]){buildGen(c);return}
  if(mode==='filter'){
@@ -51,7 +51,7 @@ function layerCss(l){
  const col=rgba(l.c,l.a);
  return mode==='box'?`${l.inset?'inset ':''}${l.x}px ${l.y}px ${l.b}px ${l.s}px ${col}`:`${l.x}px ${l.y}px ${l.b}px ${col}`;
 }
-function update(){
+function update(){hist();
  const sub=$('#subject'),stage=$('#stage');let prop,val;
  sub.removeAttribute('style');sub.className='';if(G[mode]){updateGen(sub,stage);return}
  if(mode==='filter'){
@@ -138,16 +138,44 @@ const cat=(P,close)=>{const n=P.length;let d=`M${r1(P[0][0])},${r1(P[0][1])}`;fo
 const svgPath=s=>{if(s.shape==='Blob'){const R=rng0(s.seed),P=Array.from({length:s.pts},(_,i)=>{const a=i/s.pts*Math.PI*2,r=80*(1-R()*s.rnd/100*.6);return [100+r*Math.cos(a),100+r*Math.sin(a)]});return cat(P,true)+' Z'}
  const m=s.freq*2+1,P=Array.from({length:m},(_,k)=>[k*1440/(m-1),160+(k%2?-1:1)*s.amp]);return cat(P,false)+' L1440,320 L0,320 Z'};
 const svgVB=s=>s.shape==='Blob'?'0 0 200 200':'0 0 1440 320';
-const kfOf=s=>s.kf==='custom'?[['from','transform: none; opacity: 1'],['to',`transform: translate(${s.cx}px, ${s.cy}px) rotate(${s.cr}deg) scale(${r3(s.cs/100)}); opacity: ${r3(s.co/100)}`]]:KF[s.kf];
+const stepDecl=t=>`transform: translate(${t.x}px, ${t.y}px) rotate(${t.r}deg) scale(${r3(t.sc/100)}); opacity: ${r3(t.o/100)}`;
+const kfOf=s=>s.kf==='custom'?[...s.steps].sort((a,b)=>a.p-b.p).map(t=>[t.p+'%',stepDecl(t)]):KF[s.kf];
+const stp=s=>s.steps[s.si-1];
 const anV=s=>`${s.kf} ${r3(s.dur)}s ${s.ease} ${r3(s.del)}s ${s.iter} ${s.dir} ${s.fill}`;
 const declLines=v=>v.split(';').map(x=>x.trim()).filter(Boolean).map(x=>`    ${x};`).join('\n');
 const PXS=[4,8,12,14,16,18,20,24,28,32,40,48,56,64,80,96];
-const gstops=s=>{const n=s.n||(s.use3?3:2),u=s.type==='conic'?'deg':'px';return [1,2,3,4,5].slice(0,n).map((_,i)=>{const c=s['c'+(i+1)],p=s.rep?`${r3(i*s.rsz/(n-1))}${u}`:`${n===3&&i===1?s.p2:Math.round(i*100/(n-1))}%`;return `${c} ${p}`}).join(', ')};
+const gn=s=>s.n||(s.use3?3:2);
+const evenPos=s=>{const n=gn(s);return Array.from({length:n},(_,i)=>n===3&&i===1?(s.p2==null?50:s.p2):Math.round(i*100/(n-1)))};
+const ensurePos=s=>{if(!s.pos||s.pos.length!==gn(s))s.pos=evenPos(s);return s.pos};
+const gpos=s=>(s.pos&&s.pos.length===gn(s))?s.pos:evenPos(s);
+const gstops=s=>{const n=gn(s),u=s.type==='conic'?'deg':'px',pos=gpos(s);return pos.map((p,i)=>`${s['c'+(i+1)]} ${s.rep?r3(p*s.rsz/100)+u:p+'%'}`).join(', ')};
+const yp=y=>cl2((1.5-y)/2*100);
+const BZP=[['Ease',.25,.1,.25,1],['Ease in',.42,0,1,1],['Ease out',0,0,.58,1],['Back out',.34,1.56,.64,1],['Snappy',.2,.9,.1,1]];
+const cssMask=(src,drop)=>{const st=[],keep=(t,x)=>{st.push([t,x]);return '\u0001'+(st.length-1)+'\u0002'};
+ const o=src.replace(/\/\*[\s\S]*?\*\//g,m=>drop?' ':keep('c',m)).replace(/"(?:\\.|[^"\\])*"|'(?:\\.|[^'\\])*'/g,m=>keep('s',m)).replace(/url\(\s*[^)'"\s][^)]*\)/gi,m=>keep('s',m));return [o,st]};
+const cssBack=(o,st)=>o.replace(/\u0001(\d+)\u0002/g,(_,i)=>st[i][1]);
+const cssTok=o=>{const ev=[];let buf='',pd=0;for(const ch of o){if(ch==='(')pd++;else if(ch===')')pd--;
+ if(pd<=0&&ch==='{'){ev.push({t:'open',v:buf.trim()});buf=''}else if(pd<=0&&ch==='}'){if(buf.trim())ev.push({t:'decl',v:buf.trim()});buf='';ev.push({t:'close'})}
+ else if(pd<=0&&ch===';'){if(buf.trim())ev.push({t:'decl',v:buf.trim()});buf=''}else buf+=ch}if(buf.trim())ev.push({t:'decl',v:buf.trim()});return ev};
+const fmtCss=s=>{const min=s.mode==='Minify',[o,st]=cssMask(s.css,min),ev=cssTok(o),ind=s.ind==='Tab'?'\t':s.ind==='4 spaces'?'    ':'  ';let d=0;const P=()=>ind.repeat(d),out=[];
+ const nd=t=>{if(/^\u0001\d+\u0002$/.test(t)&&st[+t.slice(1,-1)][0]==='c')return t;if(t[0]==='@')return t.replace(/\s+/g,' ');const i=t.indexOf(':');if(i<0)return t.replace(/\s+/g,' ');
+  const p=t.slice(0,i).trim(),v=t.slice(i+1).trim().replace(/\s+/g,' ').replace(/\s*,\s*/g,min?',':', ').replace(/\s*!\s*important/i,min?'!important':' !important');return p+(min?':':': ')+v};
+ for(const e of ev){if(e.t==='open'){let sel=e.v.replace(/\s+/g,' ');let m;while((m=sel.match(/^(\u0001\d+\u0002)\s*/))&&st[+m[1].slice(1,-1)][0]==='c'){out.push(P()+m[1]);sel=sel.slice(m[0].length)}
+   if(min)out.push((sel[0]==='@'?sel.replace(/\s*([:,])\s*/g,'$1'):sel.replace(/\s*([,>~])\s*/g,'$1'))+'{');else out.push(P()+(sel[0]==='@'?sel:splitTop(sel).map(x=>x.trim()).join(',\n'+P()))+' {');d++}
+  else if(e.t==='decl'){const x=nd(e.v),isC=/^\u0001\d+\u0002$/.test(x)&&st[+x.slice(1,-1)][0]==='c';out.push(min?x+';':P()+x+(isC?'':';'))}
+  else{d=Math.max(0,d-1);if(min){if(out.length&&out[out.length-1].endsWith(';'))out[out.length-1]=out[out.length-1].slice(0,-1);out.push('}')}else{out.push(P()+'}');if(d===0)out.push('')}}}
+ return cssBack(min?out.join(''):out.join('\n').trim(),st)};
 const G={
-gradient:{label:'background',s:{type:'linear',angle:135,p2:50,n:3,c1:'#ff9a3c',c2:'#e4457b',c3:'#3a4fd8',c4:'#ffd34d',c5:'#18c4a7',rep:false,rsz:40},
- f:s=>{const n=s.n||3;return [['sel','type',['linear','radial','conic']],['r','Angle','angle',0,360,1,'deg'],['r','Stops','n',2,5,1,''],...(n===3?[['r','Mid stop','p2',5,95,1,'%']]:[]),...[1,2,3,4,5].slice(0,n).map(i=>['c','Color '+i,'c'+i]),['chk','Repeating','rep'],...(s.rep?[['r','Repeat every','rsz',10,300,1,s.type==='conic'?'deg':'px']]:[]),['btn','Randomize colors',s=>{for(let i=1;i<=5;i++)s['c'+i]=rnd()}]]},
+gradient:{label:'background',s:{type:'linear',angle:135,p2:50,n:3,pos:[0,50,100],c1:'#ff9a3c',c2:'#e4457b',c3:'#3a4fd8',c4:'#ffd34d',c5:'#18c4a7',rep:false,rsz:40},
+ handles:s=>{const n=gn(s),pos=gpos(s),r=$('#subject').getBoundingClientRect(),W=r.width||240,H=r.height||200,hs=pos.map((p,i)=>[p,100,'stop',s['c'+(i+1)]]);
+  if(s.type!=='radial'){const a=s.angle*Math.PI/180,R=Math.min(W,H)/2+26;hs.push([50+Math.sin(a)*R/W*100,50-Math.cos(a)*R/H*100,'dial'])}return hs},
+ hset:(s,i,x,y)=>{const n=gn(s);if(i<n){const pos=ensurePos(s),lo=i?pos[i-1]:0,hi=i<n-1?pos[i+1]:100;pos[i]=Math.round(Math.max(lo,Math.min(hi,x)));if(n===3)s.p2=pos[1]}
+  else{const r=$('#subject').getBoundingClientRect();let a=Math.round(Math.atan2((x-50)/100*r.width,-(y-50)/100*r.height)*180/Math.PI);if(a<0)a+=360;const q=a%45;if(q<=3||q>=42)a=Math.round(a/45)*45;s.angle=a%360}},
+ f:s=>{const n=gn(s);ensurePos(s);return [['sel','type',['linear','radial','conic']],['r','Angle','angle',0,360,1,'deg'],['sel','n',[2,3,4,5],'Stops'],...[...Array(n).keys()].flatMap(i=>[['c','Color '+(i+1),'c'+(i+1)],['r','Position '+(i+1),i,0,100,1,'%',s=>s.pos]]),['btn','Even spacing',s=>{s.pos=evenPos(s)}],['chk','Repeating','rep'],...(s.rep?[['r','Repeat every','rsz',10,300,1,s.type==='conic'?'deg':'px']]:[]),['btn','Randomize colors',s=>{for(let i=1;i<=5;i++)s['c'+i]=rnd()}]]},
  out:s=>{const st=gstops(s),pre=s.rep?'repeating-':'';return [['background',s.type==='linear'?`${pre}linear-gradient(${s.angle}deg, ${st})`:s.type==='radial'?`${pre}radial-gradient(circle at center, ${st})`:`${pre}conic-gradient(from ${s.angle}deg, ${st})`]]}},
 radius:{label:'border-radius',s:{a:60,b:40,c:30,d:70,e:60,f:30,g:70,h:40},pv:GRAD,
+ handles:s=>{const P=[[s.a,0],[100-s.b,0],[100-s.c,100],[s.d,100],[0,s.e],[100,s.f],[100,100-s.g],[0,100-s.h]];if(Math.abs(P[0][0]-P[1][0])<7)P[1][1]=9;if(Math.abs(P[2][0]-P[3][0])<7)P[3][1]=91;if(Math.abs(P[4][1]-P[7][1])<7)P[7][0]=9;if(Math.abs(P[5][1]-P[6][1])<7)P[6][0]=91;return P.map(p=>[p[0],p[1],'edge'])},
+ hset:(s,i,x,y)=>{const X=Math.round(cl2(x)),Y=Math.round(cl2(y));[()=>{s.a=X},()=>{s.b=100-X},()=>{s.c=100-X},()=>{s.d=X},()=>{s.e=Y},()=>{s.f=Y},()=>{s.g=100-Y},()=>{s.h=100-Y}][i]()},
  f:[['r','Top-left X','a',0,100,1,'%'],['r','Top-right X','b',0,100,1,'%'],['r','Bottom-right X','c',0,100,1,'%'],['r','Bottom-left X','d',0,100,1,'%'],['r','Top-left Y','e',0,100,1,'%'],['r','Top-right Y','f',0,100,1,'%'],['r','Bottom-right Y','g',0,100,1,'%'],['r','Bottom-left Y','h',0,100,1,'%'],['btn','Randomize blob',s=>{'abcdefgh'.split('').forEach(k=>s[k]=rn(30,70))}]],
  out:s=>[['border-radius',`${s.a}% ${s.b}% ${s.c}% ${s.d}% / ${s.e}% ${s.f}% ${s.g}% ${s.h}%`]]},
 glass:{label:'glassmorphism',base:'radial-gradient(circle at 42% 40%,#ffd34d 0 70px,transparent 71px),radial-gradient(circle at 58% 62%,#ff4d8d 0 90px,transparent 91px),linear-gradient(135deg,#6a5cff,#18c4a7)',s:{blur:14,alpha:.18,sat:140,border:.35,radius:20,tint:'#ffffff'},
@@ -187,7 +215,7 @@ contrast:{label:'colors',s:{fg:'#1b2240',bg:'#ffd34d'},txt:s=>`${cr(s).toFixed(2
  f:[['c','Text color','fg'],['c','Background','bg'],['btn','Fix text for AA',s=>{s.fg=fixC(s,4.5)}],['btn','Fix text for AAA',s=>{s.fg=fixC(s,7)}],['btn','Swap colors',s=>{[s.fg,s.bg]=[s.bg,s.fg]}]],
  pv:s=>[['color',s.fg],['background',s.bg],['display','grid'],['place-items','center'],['font','800 1.6rem "Bricolage Grotesque",system-ui,sans-serif']],
  out:s=>{const r=cr(s),y=v=>v?'pass':'fail';return [['color',s.fg],['background',s.bg],['',`contrast ${r.toFixed(2)}:1`],['',`AA text ${y(r>=4.5)} | AA large text ${y(r>=3)} | AAA text ${y(r>=7)} | AAA large text ${y(r>=4.5)} | UI components ${y(r>=3)}`]]}},
-clip:{label:'clip-path',s:{mode:'Preset shapes',shape:'hexagon',pts:[[50,0],[100,100],[0,100]],sel:0,snap:true,guides:true,grid:false},pv:[['background','linear-gradient(135deg,#4a5bdc,#e4457b)'],['width','190px'],['height','190px'],['border-radius','0']],
+clip:{label:'clip-path',gd:1,s:{mode:'Preset shapes',shape:'hexagon',pts:[[50,0],[100,100],[0,100]],sel:0,snap:true,guides:true,grid:false},pv:[['background','linear-gradient(135deg,#4a5bdc,#e4457b)'],['width','190px'],['height','190px'],['border-radius','0']],
  handles:s=>s.mode==='Draw your own'?s.pts:null,
  f:s=>s.mode==='Preset shapes'?[['sel','mode',['Preset shapes','Draw your own'],'Mode'],['sel','shape',Object.keys(CP),'Shape']]:[['sel','mode',['Preset shapes','Draw your own'],'Mode'],...PK.map(k=>['btn',k,s=>{s.pts=polyPts(k);s.sel=0}]),['btn','Add point',s=>{const a=s.pts[s.sel],b=s.pts[(s.sel+1)%s.pts.length];s.pts.splice(s.sel+1,0,[Math.round((a[0]+b[0])/2),Math.round((a[1]+b[1])/2)]);s.sel++}],['btn','Remove point',s=>{if(s.pts.length>3){s.pts.splice(s.sel,1);s.sel=Math.max(0,s.sel-1)}}],
   ['btn','Center shape',s=>{const x=s.pts.map(p=>p[0]),y=s.pts.map(p=>p[1]),dx=50-(Math.min(...x)+Math.max(...x))/2,dy=50-(Math.min(...y)+Math.max(...y))/2;s.pts=s.pts.map(p=>[Math.round(p[0]+dx),Math.round(p[1]+dy)])}],['btn','Flip horizontal',s=>{s.pts=s.pts.map(p=>[100-p[0],p[1]])}],['btn','Flip vertical',s=>{s.pts=s.pts.map(p=>[p[0],100-p[1]])}],
@@ -210,15 +238,19 @@ units:{label:'font-size',s:{px:24,root:16,rem:1.5,dir:'px to rem',out:'Single'},
  out:s=>[],dec:s=>s.out==='Single'?[['font-size',s.dir==='px to rem'?`${r3(s.px/s.root)}rem`:`${s.rem}rem`]]:null,
  code:s=>s.out==='Table'?`/* root font size: ${s.root}px */\n${PXS.map(p=>`/* ${p}px = ${r3(p/s.root)}rem */`).join('\n')}`:s.out==='Variables'?`:root {\n${PXS.map(p=>`  --space-${p}: ${r3(p/s.root)}rem;`).join('\n')}\n}`:s.dir==='px to rem'?`font-size: ${r3(s.px/s.root)}rem;\n/* ${s.px}px at a ${s.root}px root size */`:`font-size: ${s.rem}rem;\n/* = ${r3(s.rem*s.root)}px at a ${s.root}px root size */`},
 ease:{label:'easing',s:{x1:.25,y1:.1,x2:.25,y2:1},
- f:[['r','X1','x1',0,1,.01,''],['r','Y1','y1',-1,2,.01,''],['r','X2','x2',0,1,.01,''],['r','Y2','y2',-1,2,.01,''],['btn','Ease',s=>Object.assign(s,{x1:.25,y1:.1,x2:.25,y2:1}),s=>eqb(s,0.25,0.1,0.25,1)],['btn','Ease in',s=>Object.assign(s,{x1:.42,y1:0,x2:1,y2:1}),s=>eqb(s,0.42,0,1,1)],['btn','Ease out',s=>Object.assign(s,{x1:0,y1:0,x2:.58,y2:1}),s=>eqb(s,0,0,0.58,1)],['btn','Back out',s=>Object.assign(s,{x1:.34,y1:1.56,x2:.64,y2:1}),s=>eqb(s,0.34,1.56,0.64,1)],['btn','Snappy',s=>Object.assign(s,{x1:.2,y1:.9,x2:.1,y2:1}),s=>eqb(s,0.2,0.9,0.1,1)]],
- inject:()=>'@keyframes ez{from{transform:translateX(-110px)}to{transform:translateX(110px)}}',
- pv:s=>[['width','34px'],['height','34px'],['border-radius','50%'],['background','linear-gradient(135deg,#4a5bdc,#8b9bff)'],['animation',`ez 1.6s ${bz(s)} infinite alternate`]],
+ handles:s=>[[s.x1*100,yp(s.y1),'bz'],[s.x2*100,yp(s.y2),'bz']],
+ hset:(s,i,x,y)=>{const nx=Math.round(cl2(x))/100,ny=Math.round((1.5-cl2(y)/100*2)*100)/100;if(i===0){s.x1=nx;s.y1=ny}else{s.x2=nx;s.y2=ny}},
+ f:[['r','X1','x1',0,1,.01,''],['r','Y1','y1',-1,2,.01,''],['r','X2','x2',0,1,.01,''],['r','Y2','y2',-1,2,.01,''],...BZP.map(([n,a,b,c,d])=>['btn',n,s=>Object.assign(s,{x1:a,y1:b,x2:c,y2:d}),s=>eqb(s,a,b,c,d)])],
+ inject:()=>'@keyframes ezs{from{transform:translateX(0)}to{transform:translateX(100px)}}',
+ html:s=>`<svg viewBox="0 0 100 100" width="100%" height="100%" preserveAspectRatio="none" style="display:block"><path d="M0,75H100M0,50H100M0,25H100" stroke="rgba(27,34,64,.12)" stroke-width="1" fill="none" vector-effect="non-scaling-stroke"/><path d="M0,75L${s.x1*100},${yp(s.y1)}M100,25L${s.x2*100},${yp(s.y2)}" stroke="rgba(27,34,64,.4)" stroke-width="1" fill="none" stroke-dasharray="3 3" vector-effect="non-scaling-stroke"/><path d="M0,75C${s.x1*100},${yp(s.y1)} ${s.x2*100},${yp(s.y2)} 100,25" stroke="#4a5bdc" stroke-width="3" fill="none" vector-effect="non-scaling-stroke"/><circle cx="0" cy="75" r="3.2" fill="#e4457b" style="animation:ezs 1.6s ${bz(s)} infinite alternate"/></svg>`,
+ pv:[['width','260px'],['height','260px'],['background','#fff'],['border-radius','16px'],['max-width','100%']],
  out:s=>[['transition-timing-function',bz(s)]]},
 neu:{label:'neumorphism',stage:s=>s.c,s:{c:'#e0e5ec',d:10,b:22,r:24,inset:false},pv:[['width','180px'],['height','180px']],
  f:[['c','Base color','c'],['r','Distance','d',2,30,1,'px'],['r','Blur','b',0,60,1,'px'],['r','Radius','r',0,80,1,'px'],['chk','Pressed in (inset)','inset']],
  out:s=>{const dk=mix(s.c,[0,0,0],.14),lt=mix(s.c,[255,255,255],.75),i=s.inset?'inset ':'';return [['background',s.c],['border-radius',s.r+'px'],['box-shadow',`${i}${s.d}px ${s.d}px ${s.b}px ${dk}, ${i}-${s.d}px -${s.d}px ${s.b}px ${lt}`]]}},
-border:{label:'border',s:{w:3,st:'solid',c:'#4a5bdc',r:16},f:[['r','Width','w',0,16,1,'px'],['sel','st',['solid','dashed','dotted','double'],'Style'],['c','Color','c'],['r','Radius','r',0,100,1,'px']],
- out:s=>[['border',`${s.w}px ${s.st} ${s.c}`],['border-radius',s.r+'px']]},
+border:{label:'border',s:{w:3,st:'solid',c:'#4a5bdc',r:16,sides:['top','right','bottom','left'],ow:0,oo:4},
+ f:[['r','Width','w',0,16,1,'px'],['sel','st',['solid','dashed','dotted','double'],'Style'],['c','Color','c'],['multi','sides',['top','right','bottom','left'],'Sides'],['r','Radius','r',0,100,1,'px'],['r','Outline','ow',0,12,1,'px'],['r','Outline offset','oo',-8,20,1,'px']],
+ out:s=>{const b=`${s.w}px ${s.st} ${s.c}`,S=['top','right','bottom','left'],all=S.every(x=>s.sides.includes(x));return [...(all?[['border',b]]:S.filter(x=>s.sides.includes(x)).map(x=>['border-'+x,b])),['border-radius',s.r+'px'],...(s.ow>0?[['outline',`${s.ow}px ${s.st} ${s.c}`],['outline-offset',s.oo+'px']]:[])]}},
 blend:{label:'background-blend-mode',s:{m:'multiply'},pv:[['background','linear-gradient(135deg,#ff9a3c,#e4457b),linear-gradient(90deg,#18c4a7,#4a5bdc)'],['width','220px'],['height','170px']],
  f:[['sel','m',['multiply','screen','overlay','darken','lighten','color-dodge','color-burn','hard-light','soft-light','difference','exclusion','hue','saturation','color','luminosity'],'Mode']],
  out:s=>[['background-blend-mode',s.m]],code:s=>`background-blend-mode: ${s.m};\n/* needs two or more backgrounds on the element */\n/* mix-blend-mode: ${s.m}; blends an element with what is behind it */`},
@@ -259,8 +291,14 @@ svg:{label:'svg',s:{shape:'Blob',fill:'#4a5bdc',pts:7,rnd:45,seed:7,amp:60,freq:
  f:s=>[['sel','shape',['Blob','Wave'],'Shape'],...(s.shape==='Blob'?[['r','Points','pts',3,12,1,''],['r','Randomness','rnd',0,100,1,'%'],['btn','New shape',s=>{s.seed=(s.seed*7+13)%9973}]]:[['r','Amplitude','amp',10,120,1,''],['r','Waves','freq',1,6,1,'']]),['c','Fill','fill']],
  pv:[['width','320px'],['max-width','100%'],['height','auto'],['background','transparent']],out:s=>[],
  code:s=>`<svg xmlns="http://www.w3.org/2000/svg" viewBox="${svgVB(s)}">\n  <path fill="${s.fill}" d="${svgPath(s)}"/>\n</svg>`},
-anim:{label:'animation',s:{kf:'pulse',dur:1.2,del:0,ease:'ease-in-out',iter:'infinite',dir:'normal',fill:'none',cx:60,cy:0,cr:0,cs:100,co:100},pv:[['background','linear-gradient(135deg,#4a5bdc,#8b9bff)'],['width','120px'],['height','120px'],['border-radius','24px']],
- f:s=>[['sel','kf',[...Object.keys(KF),'custom'],'Effect'],...(s.kf==='custom'?[['r','Move X','cx',-120,120,1,'px'],['r','Move Y','cy',-120,120,1,'px'],['r','Rotate','cr',-360,360,1,'deg'],['r','Scale','cs',20,200,1,'%'],['r','Opacity','co',0,100,1,'%']]:[]),['r','Duration','dur',.2,4,.1,'s'],['r','Delay','del',0,3,.1,'s'],['sel','ease',['linear','ease','ease-in-out','cubic-bezier(.34, 1.56, .64, 1)'],'Easing'],['sel','iter',['infinite','1','3'],'Repeat'],['sel','dir',['normal','alternate','reverse'],'Direction'],['sel','fill',['none','forwards','both'],'Fill mode']],
+fmt:{label:'css',s:{css:'.card{display:flex;gap:12px;box-shadow:0 8px 24px rgba(0,0,0,.2)}\n.card:hover{transform:translateY(-4px)}\n@media (max-width:600px){.card{display:block}}',mode:'Format',ind:'2 spaces'},
+ f:s=>[['sel','mode',['Format','Minify'],'Mode'],...(s.mode==='Format'?[['sel','ind',['2 spaces','4 spaces','Tab'],'Indent']]:[]),['area','css','Paste CSS here']],
+ txt:s=>{const o=fmtCss(s),a=new TextEncoder().encode(s.css).length,b=new TextEncoder().encode(o).length;return s.mode==='Minify'?`${a} B to ${b} B (${a?Math.round((1-b/a)*100):0}% smaller)`:`${o.split('\n').length} lines`},
+ pv:[['background','transparent'],['width','100%'],['height','auto'],['font','700 1.3rem "Bricolage Grotesque",system-ui,sans-serif'],['color','#1b2240'],['text-align','center']],out:s=>[],code:fmtCss},
+anim:{label:'animation',s:{kf:'pulse',dur:1.2,del:0,ease:'ease-in-out',iter:'infinite',dir:'normal',fill:'none',si:2,steps:[{p:0,x:0,y:0,r:0,sc:100,o:100},{p:50,x:60,y:-40,r:0,sc:110,o:100},{p:100,x:0,y:0,r:0,sc:100,o:100}]},pv:[['background','linear-gradient(135deg,#4a5bdc,#8b9bff)'],['width','120px'],['height','120px'],['border-radius','24px']],
+ f:s=>{const n=s.steps.length;if(s.si>n)s.si=n;return [['sel','kf',[...Object.keys(KF),'custom'],'Effect'],...(s.kf==='custom'?[['sel','si',[...Array(n).keys()].map(i=>i+1),'Step'],['r','Position','p',0,100,1,'%',stp],['r','Move X','x',-120,120,1,'px',stp],['r','Move Y','y',-120,120,1,'px',stp],['r','Rotate','r',-360,360,1,'deg',stp],['r','Scale','sc',20,200,1,'%',stp],['r','Opacity','o',0,100,1,'%',stp],
+  ['btn','Add step',s=>{if(s.steps.length>=6)return;s.steps.sort((a,b)=>a.p-b.p);const i=s.si-1,a=s.steps[i],b=s.steps[i+1]||s.steps[i-1]||a;let np=Math.round((a.p+b.p)/2);if(np===a.p)np=Math.min(100,a.p+1);s.steps.push({...a,p:np});s.steps.sort((p,q)=>p.p-q.p);s.si=s.steps.findIndex(t=>t.p===np)+1}],
+  ['btn','Remove step',s=>{if(s.steps.length>2){s.steps.splice(s.si-1,1);s.si=Math.max(1,s.si-1)}}]]:[]),['r','Duration','dur',.2,4,.1,'s'],['r','Delay','del',0,3,.1,'s'],['sel','ease',['linear','ease','ease-in-out','cubic-bezier(.34, 1.56, .64, 1)'],'Easing'],['sel','iter',['infinite','1','3'],'Repeat'],['sel','dir',['normal','alternate','reverse'],'Direction'],['sel','fill',['none','forwards','both'],'Fill mode']]},
  inject:s=>`@keyframes ${s.kf}{${kfOf(s).map(([k,v])=>`${k}{${v}}`).join('')}}`,
  out:s=>[['animation',anV(s)]],
  code:s=>`@keyframes ${s.kf} {\n${kfOf(s).map(([k,v])=>`  ${k} {\n${declLines(v)}\n  }`).join('\n')}\n}\n\n.element {\n  animation: ${anV(s)};\n}`}
@@ -301,16 +339,21 @@ function overlay(pts,s,sub,stage){let gl=stage.querySelector('#gl');const lamp=!
   bd(lamp.x===0&&lamp.y===0?'Shadow centered':`Offset ${lamp.x}px, ${lamp.y}px`,lamp.x===0&&lamp.y===0)}}
 function syncHandles(g,s,sub,stage){let hs=[...stage.querySelectorAll('.hnd')];const pts=g&&g.handles?g.handles(s):null;if(!pts){hs.forEach(x=>x.remove());overlay(null,s,sub,stage);return}
  while(hs.length>pts.length)hs.pop().remove();
- while(hs.length<pts.length){const b=h('button',{class:'hnd',type:'button'});b.dataset.i=hs.length;b.setAttribute('aria-label','Drag point '+(hs.length+1));
-  const mv=(i,x,y,ns)=>{const t=G[mode].s;x=cl2(x);y=cl2(y);SNAP={x:null,y:null,on:!ns};
-   if(!ns&&t.snap!==false){const sn=(v,ax)=>{let best=null,bd=2.5;[0,50,100,...(t.grid?[25,75]:[]),...t.pts.filter((_,k)=>k!==i).map(p=>p[ax])].forEach(q=>{const d=Math.abs(v-q);if(d<bd){bd=d;best=q}});return best},bx=sn(x,0),by=sn(y,1);if(bx!=null){x=bx;SNAP.x=bx}if(by!=null){y=by;SNAP.y=by}}
-   t.pts[i]=[Math.round(x),Math.round(y)];if(!hR)hR=requestAnimationFrame(()=>{hR=0;build();update()})};
-  b.addEventListener('pointerdown',e=>{b.setPointerCapture(e.pointerId);b.dataset.d=1;G[mode].s.sel=+b.dataset.i;build();update()});
+ while(hs.length<pts.length){const b=h('button',{class:'hnd',type:'button'});b.dataset.i=hs.length;b.setAttribute('aria-label','Drag handle '+(hs.length+1));
+  const mv=(i,x,y,ns)=>{const g2=G[mode],t=g2.s;
+   if(g2.hset)g2.hset(t,i,x,y);
+   else{x=cl2(x);y=cl2(y);SNAP={x:null,y:null,on:!ns};
+    if(!ns&&t.snap!==false){const sn=(v,ax)=>{let best=null,bd=2.5;[0,50,100,...(t.grid?[25,75]:[]),...t.pts.filter((_,k)=>k!==i).map(p=>p[ax])].forEach(q=>{const d=Math.abs(v-q);if(d<bd){bd=d;best=q}});return best},bx=sn(x,0),by=sn(y,1);if(bx!=null){x=bx;SNAP.x=bx}if(by!=null){y=by;SNAP.y=by}}
+    t.pts[i]=[Math.round(x),Math.round(y)]}
+   if(!hR)hR=requestAnimationFrame(()=>{hR=0;build();update()})};
+  b.addEventListener('pointerdown',e=>{b.setPointerCapture(e.pointerId);b.dataset.d=1;const t=G[mode].s;if('sel' in t)t.sel=+b.dataset.i;build();update()});
   b.addEventListener('pointermove',e=>{if(!b.dataset.d)return;const r=$('#subject').getBoundingClientRect();mv(+b.dataset.i,(e.clientX-r.left)/r.width*100,(e.clientY-r.top)/r.height*100)});
   b.addEventListener('pointerup',()=>{delete b.dataset.d;SNAP={x:null,y:null,on:false};update()});
-  b.addEventListener('keydown',e=>{const d={ArrowLeft:[-1,0],ArrowRight:[1,0],ArrowUp:[0,-1],ArrowDown:[0,1]}[e.key];if(!d)return;e.preventDefault();const i=+b.dataset.i,p=G[mode].s.pts[i],n=e.shiftKey?5:1;mv(i,p[0]+d[0]*n,p[1]+d[1]*n,1)});
+  b.addEventListener('keydown',e=>{const d={ArrowLeft:[-1,0],ArrowRight:[1,0],ArrowUp:[0,-1],ArrowDown:[0,1]}[e.key];if(!d)return;e.preventDefault();const g2=G[mode],p=g2.handles(g2.s)[+b.dataset.i],n=e.shiftKey?5:1;mv(+b.dataset.i,p[0]+d[0]*n,p[1]+d[1]*n,1)});
   stage.append(b);hs.push(b)}
- const sr=sub.getBoundingClientRect(),st=stage.getBoundingClientRect();hs.forEach((b,i)=>{b.style.left=(sr.left-st.left+pts[i][0]/100*sr.width)+'px';b.style.top=(sr.top-st.top+pts[i][1]/100*sr.height)+'px';b.classList.toggle('on',i===s.sel)});overlay(pts,s,sub,stage)}
+ const sr=sub.getBoundingClientRect(),st=stage.getBoundingClientRect();
+ hs.forEach((b,i)=>{b.className='hnd'+(pts[i][2]?' '+pts[i][2]:'')+(i===s.sel?' on':'');b.style.background=pts[i][3]||'';b.style.left=(sr.left-st.left+pts[i][0]/100*sr.width)+'px';b.style.top=(sr.top-st.top+pts[i][1]/100*sr.height)+'px'});
+ overlay(g.gd?pts:null,s,sub,stage)}
 function updateGen(sub,stage){const g=G[mode],s=g.s,o=g.out(s);
  sub.textContent=typeof g.txt==='function'?g.txt(s):(g.txt||'');const cx=typeof g.cls==='function'?g.cls(s):g.cls;sub.className='gbox'+(cx?' '+cx:'');
  if(g.html)sub.innerHTML=g.html(s);
@@ -335,6 +378,30 @@ orb.addEventListener('pointerup',()=>{drag=false});
 orb.addEventListener('keydown',e=>{const t=tgt(),d={ArrowLeft:[1,0],ArrowRight:[-1,0],ArrowUp:[0,1],ArrowDown:[0,-1]}[e.key];
  if(!t||!d)return;e.preventDefault();const n=e.shiftKey?5:1;t.x+=d[0]*n;t.y+=d[1]*n;build();update()});
 addEventListener('resize',placeOrb);
+
+const HS={},DEF={},IMP={open:false,msg:''};
+const SUP={glass:'backdrop-filter works in Chrome 76+, Safari 9+ (with the -webkit- prefix, included in the output) and Firefox 103+.',clamp:'clamp() works in Chrome 79+, Safari 13.1+ and Firefox 75+. The cqi unit needs Chrome 105+, Safari 16+ or Firefox 110+.',cq:'Container queries work in Chrome 105+, Safari 16+ and Firefox 110+.',aspect:'aspect-ratio works in Chrome 88+, Safari 15+ and Firefox 89+. For older browsers use the padding-top fallback in the comment.',convert:'oklch() works in Chrome 111+, Safari 15.4+ and Firefox 113+. color-mix() needs Chrome 111+, Safari 16.2+ or Firefox 113+.',gradient:'Linear and radial gradients work everywhere. conic-gradient works in Chrome 69+, Safari 12.1+ and Firefox 83+.',flex:'gap on flexbox works in Chrome 84+, Safari 14.1+ and Firefox 63+.',grid:'CSS Grid works in Chrome 57+, Safari 10.1+ and Firefox 52+.',areas:'CSS Grid works in Chrome 57+, Safari 10.1+ and Firefox 52+.',scroll:'scrollbar-color works in Chrome 121+ and Firefox 64+. Other browsers use the ::-webkit-scrollbar rules.',blend:'background-blend-mode works in Chrome 35+, Safari 8+ and Firefox 30+.',clip:'clip-path with polygon() works in all current browsers.'};
+function supNote(){const c=$('#controls'),o=c.querySelector('.sup');if(o)o.remove();if(SUP[mode])c.append(h('p',{class:'sup'},'Browser support: '+SUP[mode]+' Versions are approximate, so check caniuse.com before relying on them.'))}
+function restore(m,st){if(m==='box'||m==='text')Object.assign(S[m],st);else if(m==='filter')Object.assign(S.filter,st);else Object.assign(G[m].s,st)}
+function histBtns(){const H=HS[mode],u=$('#undo'),r=$('#redo'),z=$('#reset');if(u)u.disabled=!(H&&H.u.length);if(r)r.disabled=!(H&&H.r.length);if(z)z.disabled=!(DEF[mode]&&H&&H.cur!==DEF[mode])}
+function hist(){const m=mode,s=JSON.stringify(stateOf(m));let H=HS[m];if(!H){HS[m]={cur:s,u:[],r:[],t:0};histBtns();return}
+ if(s!==H.cur){const now=Date.now();if(now-H.t>500){H.u.push(H.cur);if(H.u.length>60)H.u.shift()}H.t=now;H.cur=s;H.r=[]}histBtns()}
+function undo(){const H=HS[mode];if(!H||!H.u.length)return;H.r.push(H.cur);H.cur=H.u.pop();H.t=0;restore(mode,JSON.parse(H.cur));build();update()}
+function redo(){const H=HS[mode];if(!H||!H.r.length)return;H.u.push(H.cur);H.cur=H.r.pop();H.t=0;restore(mode,JSON.parse(H.cur));build();update()}
+function resetTool(){if(!DEF[mode])return;if(HS[mode])HS[mode].t=0;restore(mode,JSON.parse(DEF[mode]));build();update()}
+function importCss(text){const t=text.trim();if(!t){IMP.msg='Paste some CSS first.';histBar();return}
+ if(mode==='fmt'&&G.fmt){G.fmt.s.css=text;IMP.open=false;IMP.msg='';build();update();return}
+ const p=declsOf(t);for(const k of [mode,...IMPORT_ORDER.filter(x=>x!==mode)]){if(!MAP[k]||!(G[k]||k==='box'||k==='text'||k==='filter'))continue;const st=MAP[k](p,'');
+  if(st){if(!HS[k])HS[k]={cur:JSON.stringify(stateOf(k)),u:[],r:[],t:0};HS[k].t=0;handoff(k,encodeURIComponent(JSON.stringify(st)));IMP.open=false;IMP.msg='';const lab=TOOLS.flatMap(g=>g[1]).find(x=>x[0]===k)[1];if(k!==mode){setMode(k);$('#live').textContent='Opened in '+lab}else{build();update()}return}}
+ IMP.msg='Could not read that. Try box-shadow, a gradient, filter, border-radius, clip-path, transform, aspect-ratio or clamp().';histBar()}
+function histBar(){const c=$('#controls');['.hbar','.imp'].forEach(q=>{const o=c.querySelector(q);if(o)o.remove()});
+ const b=(id,t,fn,title)=>h('button',{class:'chip',type:'button',id,title,onclick:fn},t);
+ const bar=h('div',{class:'hbar'},b('undo','Undo',undo,'Undo (Ctrl+Z)'),b('redo','Redo',redo,'Redo (Ctrl+Shift+Z)'),b('reset','Reset',resetTool,'Back to the default settings'),h('button',{class:'chip',type:'button','aria-pressed':IMP.open,onclick:()=>{IMP.open=!IMP.open;histBar()}},'Import CSS'));
+ c.prepend(bar);
+ if(IMP.open){const ta=h('textarea',{class:'tin',rows:4,spellcheck:'false',placeholder:'Paste CSS here, for example:\nbox-shadow: 0 8px 24px rgba(0,0,0,.2);'});
+  bar.after(h('div',{class:'imp'},ta,h('div',{class:'inline'},h('button',{class:'btn small',type:'button',onclick:()=>importCss(ta.value)},'Apply'),h('span',{class:'impmsg'},IMP.msg))))}
+ histBtns()}
+document.addEventListener('keydown',e=>{if(!(e.ctrlKey||e.metaKey)||e.altKey)return;if(/INPUT|TEXTAREA|SELECT/.test((document.activeElement||{}).tagName||''))return;const k=e.key.toLowerCase();if(k==='z'){e.preventDefault();e.shiftKey?redo():undo()}else if(k==='y'){e.preventDefault();redo()}});
 const stateOf=m=>m==='box'||m==='text'?S[m]:m==='filter'?S.filter:G[m].s;
 const LK='umbra-looks',lkLoad=()=>{try{return JSON.parse(localStorage.getItem(LK)||'[]')}catch(e){return[]}},lkSave=a=>{try{localStorage.setItem(LK,JSON.stringify(a.slice(0,40)))}catch(e){}};
 function savedPanel(){const c=$('#controls'),mine=lkLoad().filter(l=>l.tool===mode),old=c.querySelector('.sl');if(old)old.remove();
@@ -350,10 +417,11 @@ $('#share').addEventListener('click',async()=>{const st=stateOf(mode),u=location
  b.textContent='Link copied';$('#live').textContent='Link copied to clipboard';setTimeout(()=>{b.textContent='Share link'},1400)});
 addEventListener('resize',()=>{if(G[mode]&&G[mode].handles)update()});
 const ids=TOOLS.flatMap(g=>g[1].map(t=>t[0]));
+ids.forEach(i=>{try{DEF[i]=JSON.stringify(stateOf(i))}catch(e){}});
 function handoff(id,pl){try{const st=JSON.parse(decodeURIComponent(pl));
  if(id==='box'||id==='text'){const t=S[id];t.layers=st.layers.map(l=>mkLayer(l));t.sel=0;if(st.bg)t.bg=st.bg;if(st.el)t.el=st.el}
  else if(id==='filter')Object.assign(S.filter,FD,st,{ds:Object.assign({on:false,x:6,y:8,b:10,c:'#000000',a:.45},st.ds||{})});
- else if(G[id]){Object.assign(G[id].s,st);if(id==='gradient'&&st.n===undefined&&st.use3!==undefined)G.gradient.s.n=st.use3?3:2}}catch(e){}}
+ else if(G[id]){Object.assign(G[id].s,st);if(id==='gradient'){if(st.n===undefined&&st.use3!==undefined)G.gradient.s.n=st.use3?3:2;if(st.pos===undefined)G.gradient.s.pos=null}}}catch(e){}}
 const parseHash=()=>{const h=location.hash.slice(1),i=h.indexOf(':'),id=i<0?h:h.slice(0,i);return ids.includes(id)?[id,i<0?null:h.slice(i+1)]:null};
 const r0=parseHash();if(r0&&r0[1])handoff(r0[0],r0[1]);setMode(r0?r0[0]:'box');
 addEventListener('hashchange',()=>{const r=parseHash();if(!r)return;if(r[1]){handoff(r[0],r[1]);setMode(r[0])}else if(r[0]!==mode)setMode(r[0])});
