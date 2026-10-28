@@ -382,3 +382,4 @@ body{overflow-x:clip}
 .hnd.stop{width:16px;height:24px;margin:-12px 0 0 -8px;border-radius:5px}
 .hnd.dial{background:#fff;border-color:var(--lamp);width:24px;height:24px;margin:-12px 0 0 -12px}
 .hnd.edge{width:16px;height:16px;margin:-8px 0 0 -8px;border-radius:4px;background:#12a39a}
+@media (max-width:350px){.tstage>*{zoom:.5}}

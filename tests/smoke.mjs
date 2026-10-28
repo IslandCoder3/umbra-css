@@ -29,9 +29,9 @@ const open = async (url, w = 1280, mobile = false) => {
 // 1. Gallery
 {
   const { ctx, page, errors } = await open('index.html');
-  await page.waitForFunction(() => document.querySelectorAll('.tile').length >= 100);
+  await page.waitForFunction(() => document.querySelectorAll('.tile').length >= 160);
   const n = await page.evaluate(() => document.querySelectorAll('.tile').length);
-  check('gallery renders 100+ designs', n >= 100, String(n));
+  check('gallery renders 160+ designs', n >= 160, String(n));
   const slugs = await page.evaluate(() => D.map(d => slug(d[1])));
   check('design slugs are unique', new Set(slugs).size === slugs.length);
   check('design slugs are valid class names', slugs.every(s => /^[a-z]/.test(s)));
@@ -71,7 +71,7 @@ const open = async (url, w = 1280, mobile = false) => {
 {
   const { ctx, page, errors } = await open('studio.html');
   const ids = await page.evaluate(() => TOOLS.flatMap(g => g[1].map(t => t[0])));
-  check('studio has 30 tools', ids.length === 30, String(ids.length));
+  check('studio has 34 tools', ids.length === 34, String(ids.length));
   const bad = [];
   for (const id of ids) {
     await page.evaluate(i => { location.hash = '#' + i }, id); await page.waitForTimeout(90);
@@ -129,6 +129,14 @@ const open = async (url, w = 1280, mobile = false) => {
   await page.goto(BASE + 'studio.html#anim'); await page.waitForTimeout(300); await click('custom');
   const pct = async () => (await code()).match(/\n  \d+%/g).length;
   const s0 = await pct(); await click('Add step'); check('animation keyframe steps can be added', (await pct()) === s0 + 1);
+  await page.goto(BASE + 'studio.html#tw'); await page.waitForTimeout(300);
+  const twOut = await code(); check('Tailwind classes convert to CSS', /display: flex;/.test(twOut) && /\.element:hover \{/.test(twOut) && /@media \(min-width: 768px\)/.test(twOut));
+  await page.goto(BASE + 'studio.html#fonts'); await page.waitForTimeout(300);
+  check('font pairing outputs Google Fonts code', /fonts\.googleapis\.com\/css2/.test(await code()) && /font-family: "Playfair Display"/.test(await code()));
+  await page.goto(BASE + 'studio.html#theme'); await page.waitForTimeout(300);
+  const thOut = await code(); check('theme builder outputs light and dark variables', /--color-bg/.test(thOut) && /prefers-color-scheme: dark/.test(thOut) && /\[data-theme="dark"\]/.test(thOut));
+  await page.goto(BASE + 'studio.html#boxm'); await page.waitForTimeout(300);
+  check('box model outputs sizes', /drawn size with padding and border: 248px x 140px/.test(await code()));
   check('studio editing has no console errors', errors.length === 0, errors.join(' | '));
   await ctx.close();
 }
@@ -141,7 +149,7 @@ for (const [w, mobile] of [[320, true], [390, true], [768, false], [1280, false]
     if (pageName === 'studio.html') {
       const ids = await page.evaluate(() => TOOLS.flatMap(g => g[1].map(t => t[0])));
       for (const id of ids) { await page.evaluate(i => { location.hash = '#' + i }, id); await page.waitForTimeout(60); if (await page.evaluate(() => document.documentElement.scrollWidth > innerWidth)) over.push(id) }
-    } else { await page.waitForFunction(() => document.querySelectorAll('.tile').length >= 100); if (await page.evaluate(() => document.documentElement.scrollWidth > innerWidth)) over.push('page') }
+    } else { await page.waitForFunction(() => document.querySelectorAll('.tile').length >= 160); if (await page.evaluate(() => document.documentElement.scrollWidth > innerWidth)) over.push('page') }
     check(`no horizontal overflow: ${pageName} at ${w}px`, over.length === 0, over.join(','));
     await ctx.close();
   }

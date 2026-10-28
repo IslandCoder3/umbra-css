@@ -10,11 +10,11 @@ An all-in-one CSS toolkit with ready-made, copyable designs and generators for e
 
 ## About
 
-Built as a go-to reference for front-end developers, Umbra pairs a gallery of 82 ready-made CSS designs with a studio of 30 generators for the properties people look up all the time. Every design and every generator ends in the same place: clean, plain CSS you can copy straight into a project. Most visitors are on phones, so the whole site is designed mobile-first and kept light enough to stay smooth on slower devices.
+Built as a go-to reference for front-end developers, Umbra pairs a gallery of 82 ready-made CSS designs with a studio of 34 generators for the properties people look up all the time. Every design and every generator ends in the same place: clean, plain CSS you can copy straight into a project. Most visitors are on phones, so the whole site is designed mobile-first and kept light enough to stay smooth on slower devices.
 
 ## Features
 
-- Gallery of over 120 ready-made designs across 12 categories: Shadows, Gradients, Backgrounds, Buttons, Cards, Glass, Shapes, Text, Filters, Loaders, Hover and Components
+- Gallery of over 160 ready-made designs across 14 categories: Shadows, Gradients, Backgrounds, Buttons, Cards, Glass, Shapes, Text, Filters, Loaders, Hover, Components, Forms and Navigation
 - Live previews on every card, with interactive designs (hover effects, toggles, inputs, loaders) that work right on the card
 - One-tap "Copy CSS" on each design, plus an "Edit" panel that opens the code beside a live preview so changes show as you type (a bottom sheet on mobile), with Reset and copy-your-edit
 - "Open in studio" button in the edit panel that sends the design, including your edits, to the matching generator (box shadow, text shadow, filter, gradient, radius, clip-path or glass) with its values already filled in
@@ -23,7 +23,7 @@ Built as a go-to reference for front-end developers, Umbra pairs a gallery of 82
 - Installable as an app and usable offline (web app manifest and service worker)
 - Share previews (Open Graph and Twitter cards), favicon and app icons, a custom 404 page, `robots.txt` and `sitemap.xml`
 - Category filter chips with counts and instant search (press `/` to jump to the search box)
-- Studio with 30 generators in 8 groups:
+- Studio with 34 generators in 8 groups:
   - Effects: box shadow, text shadow, filter, glass (with tint), neumorphism
   - Shape: border radius, clip-path (presets, or draw your own with draggable points, center guides, snapping and a Center shape button), transform (including 3D), border, SVG blob and wave generator
   - Color: gradient (up to 5 stops, repeating), palette (50 to 900 shades), converter (HEX, RGB, HSL and OKLCH with opacity), contrast checker with one-click AA and AAA fixes, blend modes
@@ -31,7 +31,7 @@ Built as a go-to reference for front-end developers, Umbra pairs a gallery of 82
   - Type and units: typography, fluid clamp generator (any property, full type scale, rem or px output, vw or cqi scaling, size table), px to rem tables, spacing scale
   - Motion: keyframe animation (presets or custom, delay, direction, fill mode), cubic-bezier easing
   - Responsive and UI: media queries, container queries, custom scrollbar, specificity calculator
-  - Utilities: CSS formatter and minifier
+  - Utilities: CSS formatter and minifier, Tailwind to CSS converter (variants like hover:, md: and dark: included), font pairing with ready-to-paste Google Fonts code, light and dark theme builder (CSS variables), interactive box model
 - Visual editing: drag the easing curve, gradient stops and angle dial, border radius handles and clip-path points right on the preview
 - Paste any CSS into **Import CSS** to open it in the matching generator, plus Undo, Redo (Ctrl+Z) and Reset on every tool
 - Per-side borders with outline, multi-step custom keyframes, and browser support notes on the tools that need them
