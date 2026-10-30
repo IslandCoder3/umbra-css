@@ -167,6 +167,34 @@ for (const [w, mobile] of [[320, true], [390, true], [768, false], [1280, false]
   for (const f of ['sw.js', '404.html', 'robots.txt', 'sitemap.xml', 'icon-192.png', 'icon-512.png', 'apple-touch-icon.png', 'og-image.png']) check(`file served: ${f}`, (await get(f)).status === 200);
 }
 
+// 5. Project structure and offline mode
+{
+  const sw = await (await fetch(BASE + 'sw.js')).text();
+  const core = [...sw.match(/CORE=\[([^\]]*)\]/)[1].matchAll(/'([^']+)'/g)].map(m => m[1]);
+  for (const pageName of ['index.html', 'studio.html']) {
+    const html = await (await fetch(BASE + pageName)).text();
+    const scripts = [...html.matchAll(/<script src="([^"]+)"/g)].map(m => m[1]);
+    const missing = [];
+    for (const s of scripts) { if ((await fetch(BASE + s)).status !== 200) missing.push(s + ' (not found)'); else if (!core.includes(s)) missing.push(s + ' (not cached offline)') }
+    check(`every script in ${pageName} exists and is cached offline`, missing.length === 0, missing.join(', '));
+  }
+  const toolFiles = fs.readdirSync(path.join(ROOT, 'js/studio/tools'));
+  const defined = new Set(), ids = [];
+  const pg0 = await browser.newPage(); await pg0.goto(BASE + 'studio.html'); await pg0.waitForTimeout(400);
+  const missingTools = await pg0.evaluate(() => TOOLS.flatMap(g => g[1].map(t => t[0])).filter(i => !['box', 'text', 'filter'].includes(i) && !G[i]));
+  check('every listed tool has a definition in js/studio/tools', missingTools.length === 0 && toolFiles.length === 8, missingTools.join(','));
+  await pg0.close();
+  const { ctx, page } = await open('index.html');
+  await page.evaluate(() => Promise.race([navigator.serviceWorker.ready, new Promise(r => setTimeout(r, 5000))])); await page.reload(); await page.waitForTimeout(800);
+  await ctx.setOffline(true);
+  let galleryOk = false, studioOk = false;
+  try { await page.reload(); await page.waitForFunction(() => document.querySelectorAll('.tile').length >= 160, null, { timeout: 8000 }); galleryOk = true } catch (e) {}
+  check('gallery works offline', galleryOk);
+  try { await page.goto(BASE + 'studio.html#gradient'); await page.waitForTimeout(600); studioOk = await page.evaluate(() => /linear-gradient/.test(document.querySelector('#code').textContent)) } catch (e) {}
+  check('studio works offline', studioOk);
+  await ctx.close();
+}
+
 await browser.close(); server.close();
 const failed = results.filter(r => !r.ok);
 console.log(`\n${results.length - failed.length}/${results.length} checks passed`);

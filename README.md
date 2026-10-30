@@ -45,4 +45,4 @@ Built as a go-to reference for front-end developers, Umbra pairs a gallery of 82
 
 ## Tech Stack
 
-Vanilla HTML, CSS, and JavaScript — no frameworks or build tools required to run it. Fonts load from Google Fonts. Optional smoke tests (`npm install`, `npx playwright install chromium`, then `npm test`) check every design, every generator, share links, mobile overflow and the metadata files.
+Vanilla HTML, CSS, and JavaScript — no frameworks or build tools required to run it. Fonts load from Google Fonts. The studio code is split into small files under `js/studio/` (see `js/studio/README.md` for the layout and how to add a tool). Optional smoke tests (`npm install`, `npx playwright install chromium`, then `npm test`) check every design, every generator, share links, mobile overflow and the metadata files.
